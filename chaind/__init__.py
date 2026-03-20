@@ -1,3 +1,0 @@
-"""
-ChainD - Developer Workflow Bridge
-"""
