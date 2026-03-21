@@ -2,8 +2,6 @@
 
 ChainD is a powerful CLI tool built for FOSS Hack 2026. It integrates your open-source tasks directly into your local development environment. By syncing your assigned issues and pull requests, it eliminates context-switching and speeds up your workflow. 
 
-_This project was rebuilt entirely from scratch in Golang._
-
 ## The Problem
 Developers live in the terminal, but project management and issue tracking occur in clunky web dashboards, which breaks focus and flow.
 
