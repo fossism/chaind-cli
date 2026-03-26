@@ -8,6 +8,7 @@ import (
 
 	"github.com/fossism/chaind-cli/internal/config"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
 var authCmd = &cobra.Command{
@@ -20,9 +21,10 @@ var authCmd = &cobra.Command{
 		username, _ := reader.ReadString('\n')
 		username = strings.TrimSpace(username)
 
-		fmt.Print("GitHub Personal Access Token: ")
-		token, _ := reader.ReadString('\n')
-		token = strings.TrimSpace(token)
+		fmt.Print("GitHub Personal Access Token (hidden input): ")
+		byteToken, _ := term.ReadPassword(int(os.Stdin.Fd()))
+		fmt.Println()
+		token := strings.TrimSpace(string(byteToken))
 
 		err := config.Save(username, token)
 		if err != nil {

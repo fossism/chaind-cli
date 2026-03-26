@@ -39,7 +39,13 @@ var startCmd = &cobra.Command{
 		branchName := fmt.Sprintf("issue-%d", number)
 		gitCmd := exec.Command("git", "checkout", "-b", branchName)
 		if err := gitCmd.Run(); err != nil {
-			fmt.Printf("Could not create git branch automatically: %v\n", err)
+			// Branch probably already exists, try to just checkout
+			fallbackCmd := exec.Command("git", "checkout", branchName)
+			if err2 := fallbackCmd.Run(); err2 == nil {
+				fmt.Printf("Switched to existing branch: %s\n", branchName)
+			} else {
+				fmt.Printf("Could not create/switch to git branch: %v\n", err)
+			}
 		} else {
 			fmt.Printf("Checked out new branch: %s\n", branchName)
 		}

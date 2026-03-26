@@ -11,14 +11,18 @@ import (
 )
 
 func InitDB() (*gorm.DB, error) {
-	home, err := os.UserHomeDir()
+	configDir, err := os.UserConfigDir()
 	if err != nil {
-		return nil, err
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return nil, err
+		}
+		configDir = filepath.Join(home, ".config")
 	}
-	configDir := filepath.Join(home, ".config", "chaind")
-	os.MkdirAll(configDir, 0755)
+	chaindConfigDir := filepath.Join(configDir, "chaind")
+	os.MkdirAll(chaindConfigDir, 0755)
 
-	dbPath := filepath.Join(configDir, "chaind.db")
+	dbPath := filepath.Join(chaindConfigDir, "chaind.db")
 	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})

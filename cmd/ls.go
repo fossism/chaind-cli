@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -20,7 +21,17 @@ var lsCmd = &cobra.Command{
 		database.Find(&tasks)
 
 		if len(tasks) == 0 {
-			fmt.Println("No tasks found. Try running `chaind sync` first!")
+			if OutputJSON {
+				fmt.Println("[]")
+			} else {
+				fmt.Println("No tasks found. Try running `chaind sync` first!")
+			}
+			return
+		}
+
+		if OutputJSON {
+			data, _ := json.MarshalIndent(tasks, "", "  ")
+			fmt.Println(string(data))
 			return
 		}
 

@@ -12,10 +12,14 @@ type Config struct {
 }
 
 func getConfigFile() string {
-	home, _ := os.UserHomeDir()
-	configDir := filepath.Join(home, ".config", "chaind")
-	os.MkdirAll(configDir, 0755)
-	return filepath.Join(configDir, "config.json")
+	configDir, err := os.UserConfigDir()
+	if err != nil {
+		home, _ := os.UserHomeDir()
+		configDir = filepath.Join(home, ".config")
+	}
+	chaindConfigDir := filepath.Join(configDir, "chaind")
+	os.MkdirAll(chaindConfigDir, 0755)
+	return filepath.Join(chaindConfigDir, "config.json")
 }
 
 func Save(username, token string) error {

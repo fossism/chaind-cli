@@ -8,6 +8,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var OutputJSON bool
+
 var rootCmd = &cobra.Command{
 	Use:   "chaind",
 	Short: "ChainD - Developer Workflow Bridge",
@@ -22,6 +24,8 @@ func Execute() {
 }
 
 func init() {
+	rootCmd.PersistentFlags().BoolVarP(&OutputJSON, "json", "j", false, "Output results in JSON format")
+
 	// Initialize DB on run
 	_, err := db.InitDB()
 	if err != nil {

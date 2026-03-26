@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/charmbracelet/huh/spinner"
 	"github.com/fossism/chaind-cli/internal/config"
 	"github.com/fossism/chaind-cli/internal/db"
 	"github.com/fossism/chaind-cli/internal/github"
@@ -21,8 +22,18 @@ var syncCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		fmt.Println("Fetching tasks from GitHub...")
-		tasks, err := github.FetchAssignedTasks(cfg)
+		var tasks []models.Task
+		action := func() {
+			var errFetch error
+			tasks, errFetch = github.FetchAssignedTasks(cfg)
+			err = errFetch
+		}
+
+		err = spinner.New().
+			Title("Fetching tasks from GitHub...").
+			Action(action).
+			Run()
+
 		if err != nil {
 			fmt.Printf("Error fetching tasks: %v\n", err)
 			os.Exit(1)
