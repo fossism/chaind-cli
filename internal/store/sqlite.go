@@ -6,10 +6,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/jmoiron/sqlx"
-	_ "modernc.org/sqlite"
-	"github.com/rs/zerolog/log"
 	"github.com/fossism/chaind-cli/internal/schema"
+	_ "github.com/glebarez/go-sqlite"
+	"github.com/jmoiron/sqlx"
+	"github.com/rs/zerolog/log"
 )
 
 type Store struct {
@@ -30,7 +30,7 @@ func NewStore() (*Store, error) {
 	}
 
 	dbPath := filepath.Join(dbDir, "messages.db")
-	
+
 	// Read connection pool
 	db, err := sqlx.Open("sqlite", dbPath)
 	if err != nil {
@@ -48,7 +48,7 @@ func NewStore() (*Store, error) {
 	writeDB.Exec("PRAGMA journal_mode=WAL;")
 	writeDB.Exec("PRAGMA foreign_keys=ON;")
 	writeDB.SetMaxOpenConns(1)
-	
+
 	if err := writeDB.PingContext(context.Background()); err != nil {
 		return nil, fmt.Errorf("failed to ping write db: %w", err)
 	}

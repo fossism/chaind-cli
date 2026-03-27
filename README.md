@@ -1,80 +1,53 @@
-<h1 align="center">chaind</h1>
+# chaind
 
-<p align="center">
-  <strong>The Sovereign Data Layer for Personal AI Agents</strong><br>
-  <em>An Operating System for your DMs across WhatsApp, Telegram, and Matrix.</em>
-</p>
+`chaind` is a sovereign data daemon that interfaces with your personal chat accounts (Telegram, Matrix, WhatsApp) and exposes them as a unified, local-first API over a secure Unix socket. 
 
-## Explain It To Me Like I Have Zero Knowledge
-Imagine you have a dozen different chat applications on your phone—WhatsApp, Telegram, Matrix, Discord, etc. Every time you want to send a message to a different friend, you have to open a different app, learn a different interface, and trust a different corporate server.
+It is designed for personal scripts and AI agents to programmatically query messaging history and stream live events without relying on cloud webhooks, third-party databases, or second-class bot frameworks.
 
-**`chaind` is like a universal, invisible Post Office that runs silently on your own computer.** 
+## Features
 
-Instead of dealing with 10 different apps, you (or your automated AI assistants) just talk to the `chaind` Post Office using one simple, identical language. `chaind` securely logs everything into a personal vault (a local database) and automatically translates and delivers your message to Telegram, Matrix, or wherever it needs to go. 
-
-## The Problem: Agents in Silos
-
-Cloud-based bot frameworks (like Vercel's Chat SDK) are built for SaaS platforms. They require webhooks, rely on ephemeral 24-hour windows, and treat your AI as a second-class "bot" that has no historical context of your digital life. If you want an AI agent to help you manage your personal communications, it shouldn't live in the cloud, and it shouldn't have to ask permission to access your chats.
-
-## The Solution: `chaind`
-
-`chaind` is a local-first, heavily encrypted daemon built purely in Go. It doesn't use bot APIs. It logs directly into **your** accounts—acting as a linked companion device on WhatsApp (Multi-Device), a native client on Telegram (MTProto), and a standard client on Matrix.
-
-It pulls your messages down into a single, unified, local SQLite database and exposes them to your local AI agents through a secure **Unix Socket IPC**. 
-
-You get the power of comprehensive AI agents running directly against your human chat history—without deploying a cloud server, without opening a port, and without giving a third party your private data.
-
-### ✨ Features for the FOSS Hack
-
-- **Local-First, Cloud-Free:** Agents talk to `unix:///tmp/chaind.sock`. No webhooks. No API gateways.
-- **Native User Access:** `gotd/td` for Telegram, `whatsmeow` for WhatsApp, and `mautrix-go` for Matrix. Acts as *you*, not a bot.
-- **Unified Canonical Schema:** AI agents don't need to know if a message came from WhatsApp or Matrix. `chaind` normalizes 3 different network protocols into one clean struct.
-- **Absolute Privacy:** Written in Pure Go using `modernc.org/sqlite` and `zalando/go-keyring` for OS-native credential security.
-- **Single Binary Magic:** Zero dependencies. Drop the `chaind` binary on a Raspberry Pi, a Linux server, or a Mac, and it just works.
+- **Local-first**: Data is synced directly to a local, high-concurrency [SQLite (WAL)](https://sqlite.org/wal.html) database.
+- **Native clients**: Logs in directly through Telegram (MTProto/`gotd`), Matrix (`mautrix-go`), and WhatsApp (Multi-device/`whatsmeow`) as an actively linked device.
+- **Unified IPC**: Exposes a single, normalized JSON schema via a Unix domain socket (`/tmp/chaind.sock`), abstracting away platform-specific protocol details.
+- **Zero dependencies**: Distributed as a single, statically linked binary compiled in pure Go (no CGO overhead).
 
 ## Installation
 
-Download the single statically linked binary from the releases page, or build it yourself (requires Go 1.21+):
+Download the binary from the [releases page](), or compile it from source (requires Go 1.25+):
 
 ```bash
 git clone https://github.com/fossism/chaind-cli.git
 cd chaind-cli
-go build -o chaind
-mv chaind /usr/local/bin/
+go build -o chaind .
 ```
 
-## Quick Start
+## Quick start
 
-**1. Start the daemon in the background:**
-```bash
-chaind daemon start
-```
+1. Boot the background daemon to initialize the storage and socket bindings:
+   ```bash
+   ./chaind daemon start
+   ```
 
-**2. Link your accounts:**
-```bash
-# Scan a QR code to link WhatsApp Multi-Device
-chaind auth whatsapp
+2. Authenticate the active network bridges:
+   ```bash
+   ./chaind auth telegram
+   ./chaind auth matrix
+   ```
 
-# Authenticate with MTProto
-chaind auth telegram 
+3. Generate a local capability token for IPC access:
+   ```bash
+   export CHAIND_TOKEN=$(./chaind token issue --role owner)
+   ```
 
-# Login to your homeserver
-chaind auth matrix
-```
+4. Monitor the live Server-Sent Events (SSE) stream of incoming messages:
+   ```bash
+   ./chaind watch --platform telegram 
+   ```
 
-**3. Let your agents query the socket:**
-Agents can now query the secure local socket to build context.
-```bash
-curl --unix-socket /tmp/chaind.sock http://localhost/api/v1/messages/recent?network=whatsapp
-```
+5. Dispatch a message to an active platform via the IPC router:
+   ```bash
+   ./chaind send --platform matrix --room "!room_id:example.com" --text "Hello world."
+   ```
 
-## Why pure Go?
-
-We consciously chose to avoid CGO dependencies (like `mattn/go-sqlite3`). By using `modernc.org/sqlite` (a pure-Go translation of SQLite), `chaind` cross-compiles flawlessly to `arm64`, `amd64`, Windows, macOS, and Linux out of the box. Security, speed, and zero-friction distribution.
-
-## Community & Contributing
-
-`chaind` is being built for the upcoming FOSS Hack. We welcome contributions, especially towards writing formatting engines for Markdown-to-Platform native rendering. 
-
----
-*Your DMs are your data. Own them.*
+## License
+GPL-3.0

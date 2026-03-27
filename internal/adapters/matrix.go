@@ -22,10 +22,21 @@ type MatrixAdapter struct {
 	watchers map[string][]chan schema.Message
 }
 
-func NewMatrixAdapter(st *store.Store, homeServerURL string, userID string, accessToken string) (*MatrixAdapter, error) {
-	client, err := mautrix.NewClient(homeServerURL, id.UserID(userID), accessToken)
+func NewMatrixAdapter(st *store.Store, homeServer string, userID string, accessToken string) (*MatrixAdapter, error) {
+	client, err := mautrix.NewClient(homeServer, id.UserID(userID), accessToken)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create matrix client: %w", err)
+	}
+
+	// Hot-fix: If the user provided a token but no explicit UserID (or the fallback), resolve it!
+	if userID == "" || userID == "@example:matrix.org" {
+		who, err := client.Whoami(context.Background())
+		if err == nil {
+			log.Info().Str("matrix_user_id", string(who.UserID)).Msg("Auto-detected Matrix User ID successfully")
+			client.UserID = who.UserID
+		} else {
+			log.Warn().Err(err).Msg("Failed to auto-detect Matrix User ID, token might be invalid or homeserver unreachable")
+		}
 	}
 
 	return &MatrixAdapter{

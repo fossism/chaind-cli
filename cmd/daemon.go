@@ -7,17 +7,17 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/spf13/cobra"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	
+	"github.com/spf13/cobra"
+
 	"github.com/fossism/chaind-cli/internal/adapters"
 	"github.com/fossism/chaind-cli/internal/auth"
 	"github.com/fossism/chaind-cli/internal/daemon"
 	"github.com/fossism/chaind-cli/internal/ipc"
 	"github.com/fossism/chaind-cli/internal/store"
 	"golang.org/x/sync/errgroup"
-	
+
 	"strings"
 )
 
@@ -59,9 +59,15 @@ var daemonCmd = &cobra.Command{
 		})
 
 		// Initialize Matrix Adapter
-		homeServer := "https://matrix.org"
-		userID := "@example:matrix.org"
-		accessToken, authErr := auth.GetCredential("matrix") 
+		homeServer := os.Getenv("CHAIND_MATRIX_HOMESERVER")
+		if homeServer == "" {
+			homeServer = "https://matrix.org"
+		}
+		userID := os.Getenv("CHAIND_MATRIX_USER_ID")
+		if userID == "" {
+			userID = "@example:matrix.org"
+		}
+		accessToken, authErr := auth.GetCredential("matrix")
 		if authErr == nil {
 			matrixAdapter, err := adapters.NewMatrixAdapter(dbStore, homeServer, userID, strings.TrimSpace(accessToken))
 			if err == nil {
@@ -75,8 +81,14 @@ var daemonCmd = &cobra.Command{
 		}
 
 		// Initialize Telegram Adapter
-		tgApiID := "12345"
-		tgApiHash := "example_hash"
+		tgApiID := os.Getenv("CHAIND_TELEGRAM_API_ID")
+		if tgApiID == "" {
+			tgApiID = "6" // Telegram Android API ID
+		}
+		tgApiHash := os.Getenv("CHAIND_TELEGRAM_API_HASH")
+		if tgApiHash == "" {
+			tgApiHash = "eb06d4abfb49dc3eeb1aeb98ae0f581e" // Telegram Android Hash
+		}
 		tgToken, authErr := auth.GetCredential("telegram")
 		if authErr == nil {
 			telegramAdapter, err := adapters.NewTelegramAdapter(dbStore, tgApiID, tgApiHash, strings.TrimSpace(tgToken))
@@ -87,6 +99,21 @@ var daemonCmd = &cobra.Command{
 			}
 		} else {
 			log.Warn().Msg("Telegram token not found in keyring, skipping")
+		}
+
+		// Initialize WhatsApp Adapter
+		waEnabled := os.Getenv("CHAIND_WHATSAPP_ENABLED") == "true"
+		waRisk := os.Getenv("CHAIND_WHATSAPP_ACCEPTED_RISK") == "true"
+		
+		if waEnabled && waRisk {
+			waAdapter, err := adapters.NewWhatsAppAdapter(dbStore, waEnabled, waRisk)
+			if err == nil {
+				go supervise(gCtx, "whatsapp", waAdapter, router)
+			} else {
+				log.Warn().Err(err).Msg("WhatsApp adapter failed to initialize")
+			}
+		} else {
+			log.Debug().Msg("WhatsApp adapter disabled or risk not explicitly accepted")
 		}
 
 		// Wait for shutdown signal or sub-process error
@@ -101,7 +128,7 @@ var daemonCmd = &cobra.Command{
 var daemonStartCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Start the daemon explicitly",
-	Run: daemonCmd.Run,
+	Run:   daemonCmd.Run,
 }
 
 func init() {
@@ -120,13 +147,13 @@ func supervise(ctx context.Context, name string, starter adapters.Adapter, route
 	backoff := 5 * time.Second
 	for {
 		log.Info().Str("adapter", name).Msg("connecting")
-		
+
 		// Register it so IPC can hit it
 		router.Register(starter)
-		
+
 		if err := starter.Start(ctx); err != nil {
 			router.Unregister(starter.Platform())
-			
+
 			log.Error().Str("adapter", name).Err(err).Dur("retry_in", backoff).Msg("adapter failed")
 			select {
 			case <-time.After(backoff):
@@ -142,6 +169,9 @@ func supervise(ctx context.Context, name string, starter adapters.Adapter, route
 			}
 		} else {
 			router.Unregister(starter.Platform())
+			if ctx.Err() != nil {
+				return
+			}
 			backoff = 5 * time.Second
 		}
 	}
