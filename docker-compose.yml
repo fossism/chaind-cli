@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  chaind:
+    build: .
+    container_name: chaind
+    restart: unless-stopped
+    ports:
+      - "7432:7432"
+    volumes:
+      - ./data/store:/root/.local/share/chaind
+      - ./data/config:/root/.config/chaind
+    environment:
+      - TZ=UTC
+      - CHAIND_PREFER_HTTP=true
+      - CHAIND_HTTP_PORT=7432
+      # - CHAIND_TOKEN=super_secret_token_here

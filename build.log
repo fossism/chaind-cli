@@ -1,0 +1,11 @@
+# github.com/fossism/chaind-cli/internal/adapters
+internal/adapters/matrix.go:45:61: undefined: mautrix.EventSource
+internal/adapters/telegram.go:54:26: undefined: gotgproto.BotType
+internal/adapters/telegram.go:56:26: undefined: gotgproto.UserType
+internal/adapters/telegram.go:64:26: undefined: sessionMaker.SqliteSession
+internal/adapters/telegram.go:74:47: too many arguments in call to dispatcher.AddHandler
+	have (tg.UpdateNewMessage, func(gctx *ext.Context, u *tg.UpdateNewMessage) error)
+	want (dispatcher.Handler)
+internal/adapters/telegram.go:77:54: too many arguments in call to dispatcher.AddHandler
+	have (tg.UpdateNewChannelMessage, func(gctx *ext.Context, u *tg.UpdateNewChannelMessage) error)
+	want (dispatcher.Handler)

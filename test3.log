@@ -1,0 +1,16 @@
+?   	github.com/fossism/chaind-cli	[no test files]
+?   	github.com/fossism/chaind-cli/cmd	[no test files]
+?   	github.com/fossism/chaind-cli/internal/adapters	[no test files]
+?   	github.com/fossism/chaind-cli/internal/auth	[no test files]
+ok  	github.com/fossism/chaind-cli/internal/config	(cached)
+?   	github.com/fossism/chaind-cli/internal/daemon	[no test files]
+ok  	github.com/fossism/chaind-cli/internal/db	(cached)
+ok  	github.com/fossism/chaind-cli/internal/format	0.005s
+?   	github.com/fossism/chaind-cli/internal/ipc	[no test files]
+?   	github.com/fossism/chaind-cli/internal/models	[no test files]
+ok  	github.com/fossism/chaind-cli/internal/schema	(cached)
+?   	github.com/fossism/chaind-cli/internal/search	[no test files]
+# github.com/fossism/chaind-cli/internal/store_test [github.com/fossism/chaind-cli/internal/store.test]
+internal/store/writer_test.go:26:17: assignment mismatch: 2 variables but context.Context returns 1 value
+FAIL	github.com/fossism/chaind-cli/internal/store [build failed]
+FAIL

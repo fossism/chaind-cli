@@ -6,33 +6,43 @@ import (
 	"os"
 	"strings"
 
-	"github.com/fossism/chaind-cli/internal/config"
 	"github.com/spf13/cobra"
-	"golang.org/x/term"
+	"github.com/fossism/chaind-cli/internal/auth"
 )
 
 var authCmd = &cobra.Command{
-	Use:   "auth",
-	Short: "Authenticate with GitHub using a Personal Access Token",
+	Use:   "auth [platform]",
+	Short: "Authenticate with a specific platform (whatsapp, telegram, matrix)",
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		reader := bufio.NewReader(os.Stdin)
-
-		fmt.Print("GitHub Username: ")
-		username, _ := reader.ReadString('\n')
-		username = strings.TrimSpace(username)
-
-		fmt.Print("GitHub Personal Access Token (hidden input): ")
-		byteToken, _ := term.ReadPassword(int(os.Stdin.Fd()))
-		fmt.Println()
-		token := strings.TrimSpace(string(byteToken))
-
-		err := config.Save(username, token)
-		if err != nil {
-			fmt.Printf("Error saving config: %v\n", err)
-			os.Exit(1)
+		platform := args[0]
+		switch platform {
+		case "whatsapp":
+			fmt.Println("WhatsApp auth requires running chaind daemon directly to scan the QR code in the stdout.")
+		case "telegram":
+			fmt.Print("Enter Telegram Bot/MTProto Token: ")
+			reader := bufio.NewReader(os.Stdin)
+			token, _ := reader.ReadString('\n')
+			token = strings.TrimSpace(token)
+			if err := auth.SaveCredential("telegram", token); err != nil {
+				fmt.Printf("Failed to secure token: %v\n", err)
+			} else {
+				fmt.Println("Telegram token securely stored in OS Keyring.")
+			}
+		case "matrix":
+			fmt.Print("Enter Matrix Access Token: ")
+			reader := bufio.NewReader(os.Stdin)
+			token, _ := reader.ReadString('\n')
+			token = strings.TrimSpace(token)
+			if err := auth.SaveCredential("matrix", token); err != nil {
+				fmt.Printf("Failed to secure token: %v\n", err)
+			} else {
+				fmt.Println("Matrix token securely stored in OS Keyring.")
+			}
+		default:
+			fmt.Printf("Unknown platform: %s\n", platform)
+			fmt.Println("Supported: whatsapp, telegram, matrix")
 		}
-
-		fmt.Println("Successfully authenticated & cached locally!")
 	},
 }
 

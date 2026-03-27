@@ -1,74 +1,80 @@
-# chaind
+<h1 align="center">chaind</h1>
 
-A CLI built in Go to sync, track, and manage GitHub issues directly from the terminal. Built for developers who prefer to stay out of the browser.
+<p align="center">
+  <strong>The Sovereign Data Layer for Personal AI Agents</strong><br>
+  <em>An Operating System for your DMs across WhatsApp, Telegram, and Matrix.</em>
+</p>
 
-## Why?
+## Explain It To Me Like I Have Zero Knowledge
+Imagine you have a dozen different chat applications on your phone—WhatsApp, Telegram, Matrix, Discord, etc. Every time you want to send a message to a different friend, you have to open a different app, learn a different interface, and trust a different corporate server.
 
-Developers spend most of their time in the terminal and text editors. However, issue tracking, project management, and checking assigned tasks happen in clunky web dashboards. Constant context-switching between the terminal and browser breaks focus.
+**`chaind` is like a universal, invisible Post Office that runs silently on your own computer.** 
 
-`chaind` solves this by syncing your assigned issues and pull requests into a local-first interface, bridging the web out of your local dev experience.
+Instead of dealing with 10 different apps, you (or your automated AI assistants) just talk to the `chaind` Post Office using one simple, identical language. `chaind` securely logs everything into a personal vault (a local database) and automatically translates and delivers your message to Telegram, Matrix, or wherever it needs to go. 
 
-## Features
+## The Problem: Agents in Silos
 
-- **Offline-First Storage:** Syncs tasks from GitHub directly to a local high-performance SQLite database.
-- **Workflow Commands:** Simple, chained commands to check assigned issues (`ls`), start working (`start`), and mark them closed (`done`).
-- **Dependency-Free:** Fast, compiled binary that works identically across macOS, Linux, and Windows.
+Cloud-based bot frameworks (like Vercel's Chat SDK) are built for SaaS platforms. They require webhooks, rely on ephemeral 24-hour windows, and treat your AI as a second-class "bot" that has no historical context of your digital life. If you want an AI agent to help you manage your personal communications, it shouldn't live in the cloud, and it shouldn't have to ask permission to access your chats.
+
+## The Solution: `chaind`
+
+`chaind` is a local-first, heavily encrypted daemon built purely in Go. It doesn't use bot APIs. It logs directly into **your** accounts—acting as a linked companion device on WhatsApp (Multi-Device), a native client on Telegram (MTProto), and a standard client on Matrix.
+
+It pulls your messages down into a single, unified, local SQLite database and exposes them to your local AI agents through a secure **Unix Socket IPC**. 
+
+You get the power of comprehensive AI agents running directly against your human chat history—without deploying a cloud server, without opening a port, and without giving a third party your private data.
+
+### ✨ Features for the FOSS Hack
+
+- **Local-First, Cloud-Free:** Agents talk to `unix:///tmp/chaind.sock`. No webhooks. No API gateways.
+- **Native User Access:** `gotd/td` for Telegram, `whatsmeow` for WhatsApp, and `mautrix-go` for Matrix. Acts as *you*, not a bot.
+- **Unified Canonical Schema:** AI agents don't need to know if a message came from WhatsApp or Matrix. `chaind` normalizes 3 different network protocols into one clean struct.
+- **Absolute Privacy:** Written in Pure Go using `modernc.org/sqlite` and `zalando/go-keyring` for OS-native credential security.
+- **Single Binary Magic:** Zero dependencies. Drop the `chaind` binary on a Raspberry Pi, a Linux server, or a Mac, and it just works.
 
 ## Installation
 
-Using the Go toolchain:
-
-```bash
-go install github.com/fossism/chaind-cli@latest
-```
-
-Or build from source:
+Download the single statically linked binary from the releases page, or build it yourself (requires Go 1.21+):
 
 ```bash
 git clone https://github.com/fossism/chaind-cli.git
 cd chaind-cli
 go build -o chaind
-
-# Optional: move to your PATH
 mv chaind /usr/local/bin/
 ```
 
-## Usage
+## Quick Start
 
-**1. Authentication:** Set up and securely cache your GitHub Personal Access Token (PAT).
+**1. Start the daemon in the background:**
 ```bash
-chaind auth
+chaind daemon start
 ```
 
-**2. Sync:** Pull down assigned issues and PRs into the local database.
+**2. Link your accounts:**
 ```bash
-chaind sync
+# Scan a QR code to link WhatsApp Multi-Device
+chaind auth whatsapp
+
+# Authenticate with MTProto
+chaind auth telegram 
+
+# Login to your homeserver
+chaind auth matrix
 ```
 
-**3. List:** View your tasks in the terminal.
+**3. Let your agents query the socket:**
+Agents can now query the secure local socket to build context.
 ```bash
-chaind ls
+curl --unix-socket /tmp/chaind.sock http://localhost/api/v1/messages/recent?network=whatsapp
 ```
 
-**4. Start Session:** Mark an issue as works-in-progress.
-```bash
-chaind start <repo> <issue_number>
-```
+## Why pure Go?
 
-**5. Resolve:** Mark an issue as completed.
-```bash
-chaind done <repo> <issue_number>
-```
+We consciously chose to avoid CGO dependencies (like `mattn/go-sqlite3`). By using `modernc.org/sqlite` (a pure-Go translation of SQLite), `chaind` cross-compiles flawlessly to `arm64`, `amd64`, Windows, macOS, and Linux out of the box. Security, speed, and zero-friction distribution.
 
-## Technical Architecture
+## Community & Contributing
 
-- **Go:** Core application (v1.20+)
-- **Cobra:** CLI framework for command routing
-- **go-pretty:** Terminal formatting and tables
-- **SQLite + GORM:** Embedded relational tables for local caching
+`chaind` is being built for the upcoming FOSS Hack. We welcome contributions, especially towards writing formatting engines for Markdown-to-Platform native rendering. 
 
-## Roadmap: Federated Matrix Bridge
-
-A primary issue in open-source tracking is scattered fragmentation across chat apps. Users report bugs via Matrix, Telegram, or WhatsApp, and maintainers lose track. 
-
-`chaind` is planned to act as a federated client overlay. By bridging Matrix (and `mautrix-whatsapp` / `mautrix-telegram`), `@mentions` and issues from chat apps will appear seamlessly in the terminal's task list, allowing bidirectional sync when marked as `done`.
+---
+*Your DMs are your data. Own them.*
