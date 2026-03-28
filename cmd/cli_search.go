@@ -14,6 +14,7 @@ import (
 var (
 	searchQuery string
 	searchLimit int
+	searchSince string
 	searchAgent bool
 )
 
@@ -31,6 +32,9 @@ var searchCmd = &cobra.Command{
 
 		u := fmt.Sprintf("http://unix/api/v1/messages/search?q=%s&limit=%d",
 			url.QueryEscape(searchQuery), searchLimit)
+		if searchSince != "" {
+			u += fmt.Sprintf("&since=%s", url.QueryEscape(searchSince))
+		}
 
 		req, err := http.NewRequest("GET", u, nil)
 		if err != nil {
@@ -87,6 +91,7 @@ var searchCmd = &cobra.Command{
 func init() {
 	searchCmd.Flags().StringVarP(&searchQuery, "query", "q", "", "Search query")
 	searchCmd.Flags().IntVar(&searchLimit, "limit", 20, "Max results")
+	searchCmd.Flags().StringVar(&searchSince, "since", "", "Filter results since time duration (e.g. 365d, 24h)")
 	searchCmd.Flags().BoolVar(&searchAgent, "agent", false, "Raw JSON output for agent scripts")
 	rootCmd.AddCommand(searchCmd)
 }

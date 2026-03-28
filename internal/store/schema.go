@@ -64,6 +64,15 @@ CREATE TABLE IF NOT EXISTS modlog (
     timestamp DATETIME
 );
 
+CREATE TABLE IF NOT EXISTS approval_queue (
+    id TEXT PRIMARY KEY,
+    action_type TEXT,
+    platform TEXT,
+    room_id TEXT,
+    payload TEXT,
+    created_at DATETIME
+);
+
 CREATE TABLE IF NOT EXISTS access_log (
     token_name TEXT,
     operation TEXT,
@@ -95,6 +104,19 @@ CREATE VIRTUAL TABLE IF NOT EXISTS messages_fts USING fts5(
     content='messages',
     content_rowid='rowid'
 );
+
+CREATE TRIGGER IF NOT EXISTS messages_ai AFTER INSERT ON messages BEGIN
+  INSERT INTO messages_fts(rowid, text) VALUES (new.rowid, new.text);
+END;
+
+CREATE TRIGGER IF NOT EXISTS messages_ad AFTER DELETE ON messages BEGIN
+  INSERT INTO messages_fts(messages_fts, rowid, text) VALUES('delete', old.rowid, old.text);
+END;
+
+CREATE TRIGGER IF NOT EXISTS messages_au AFTER UPDATE ON messages BEGIN
+  INSERT INTO messages_fts(messages_fts, rowid, text) VALUES('delete', old.rowid, old.text);
+  INSERT INTO messages_fts(rowid, text) VALUES (new.rowid, new.text);
+END;
 
 CREATE TABLE IF NOT EXISTS sync_cursors (
     platform TEXT,

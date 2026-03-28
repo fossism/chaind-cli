@@ -2,14 +2,16 @@ FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
-# Cache dependency downloads
+# Add gcc for go-sqlite3 CGO dependencies
+RUN apk add --no-cache gcc musl-dev
+
 COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
 
-# Build static binary — pure Go, no CGO required
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /chaind .
+# Build binary
+RUN CGO_ENABLED=1 GOOS=linux go build -ldflags="-s -w -extldflags '-static'" -o /chaind .
 
 # ─── Runtime ───
 FROM alpine:3.19

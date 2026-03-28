@@ -53,8 +53,18 @@ func (m *MatrixAdapter) Platform() string {
 func (m *MatrixAdapter) Start(ctx context.Context) error {
 	syncer := m.client.Syncer.(*mautrix.DefaultSyncer)
 	
+	// Load the stored sync token
+	if token, err := m.store.GetSyncState(ctx, "matrix", "next_batch"); err == nil && token != "" {
+		m.client.Store.SaveNextBatch(ctx, m.client.UserID, token)
+	}
+
 	syncer.OnEventType(event.EventMessage, func(_ context.Context, evt *event.Event) {
 		m.handleMessage(evt)
+	})
+
+	syncer.OnSync(func(syncCtx context.Context, resp *mautrix.RespSync, since string) bool {
+		m.store.SetSyncState(syncCtx, "matrix", "next_batch", resp.NextBatch)
+		return true // Continue syncing
 	})
 
 	log.Info().Msg("Matrix sync loop starting...")
@@ -142,24 +152,67 @@ func (m *MatrixAdapter) Send(roomID, text string) (schema.Message, error) {
 }
 
 func (m *MatrixAdapter) Reply(msgID, text string) (schema.Message, error) {
-	// Simple stub mapping. Real reply requires passing the rels inside the payload to Matrix
-	resp, err := m.client.SendText(context.Background(), id.RoomID(""), text)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	origMsg, err := m.store.GetMessage(ctx, msgID)
+	if err != nil {
+		return schema.Message{}, fmt.Errorf("failed to find original message for reply: %w", err)
+	}
+	
+	roomIDStr := origMsg.Room.ID
+	if len(roomIDStr) > 7 && roomIDStr[:7] == "matrix:" {
+		roomIDStr = roomIDStr[7:]
+	}
+
+	content := event.MessageEventContent{
+		MsgType: event.MsgText,
+		Body:    text,
+		RelatesTo: &event.RelatesTo{
+			InReplyTo: &event.InReplyTo{
+				EventID: id.EventID(origMsg.PlatformID),
+			},
+		},
+	}
+
+	resp, err := m.client.SendMessageEvent(context.Background(), id.RoomID(roomIDStr), event.EventMessage, content)
 	if err != nil {
 		return schema.Message{}, err
 	}
 	return schema.Message{
-		ID: ulid.Make().String(),
-		Platform: "matrix",
+		ID:         ulid.Make().String(),
+		Platform:   "matrix",
 		PlatformID: string(resp.EventID),
+		ParentID:   &origMsg.ID,
+		Room:       schema.Room{ID: origMsg.Room.ID},
+		Author:     schema.Author{ID: "self"},
+		Content:    schema.Content{Type: "text", Text: text},
+		Timestamp:  time.Now().UTC(),
 	}, nil
 }
 
 func (m *MatrixAdapter) React(msgID, emoji string) error {
-	// Typically done sending an m.reaction event pointing back to msgID
-	return nil
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	origMsg, err := m.store.GetMessage(ctx, msgID)
+	if err != nil {
+		return fmt.Errorf("failed to find original message: %w", err)
+	}
+
+	roomIDStr := origMsg.Room.ID
+	if len(roomIDStr) > 7 && roomIDStr[:7] == "matrix:" {
+		roomIDStr = roomIDStr[7:]
+	}
+	_, err = m.client.SendReaction(context.Background(), id.RoomID(roomIDStr), id.EventID(origMsg.PlatformID), emoji)
+	return err
 }
 
 func (m *MatrixAdapter) Ban(roomID, userID, reason string) error {
+	// Strip "matrix:" prefix if present
+	if len(roomID) > 7 && roomID[:7] == "matrix:" {
+		roomID = roomID[7:]
+	}
 	_, err := m.client.BanUser(context.Background(), id.RoomID(roomID), &mautrix.ReqBanUser{
 		Reason: reason,
 		UserID: id.UserID(userID),
@@ -173,8 +226,21 @@ func (m *MatrixAdapter) Mute(roomID, userID string, d time.Duration) error {
 }
 
 func (m *MatrixAdapter) DeleteMessage(msgID string) error {
-	// Mautrix uses Redact
-	return nil
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	origMsg, err := m.store.GetMessage(ctx, msgID)
+	if err != nil {
+		return fmt.Errorf("failed to find message for delete: %w", err)
+	}
+
+	roomIDStr := origMsg.Room.ID
+	if len(roomIDStr) > 7 && roomIDStr[:7] == "matrix:" {
+		roomIDStr = roomIDStr[7:]
+	}
+	
+	_, err = m.client.RedactEvent(context.Background(), id.RoomID(roomIDStr), id.EventID(origMsg.PlatformID), mautrix.ReqRedact{Reason: "deleted via chaind"})
+	return err
 }
 
 func (m *MatrixAdapter) handleMessage(evt *event.Event) {

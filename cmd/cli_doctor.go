@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"database/sql"
 	"fmt"
 	"net"
 	"os"
@@ -8,6 +9,7 @@ import (
 	"time"
 
 	"github.com/fossism/chaind-cli/internal/auth"
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/spf13/cobra"
 )
 
@@ -42,6 +44,23 @@ var doctorCmd = &cobra.Command{
 		if _, err := os.Stat(dbPath); err == nil {
 			fmt.Printf("  ✓ SQLite database exists: %s\n", dbPath)
 			passed++
+			
+			db, err := sql.Open("sqlite3", dbPath)
+			if err == nil {
+				defer db.Close()
+				var checkResult string
+				err = db.QueryRow("PRAGMA integrity_check;").Scan(&checkResult)
+				if err == nil && checkResult == "ok" {
+					fmt.Printf("  ✓ SQLite PRAGMA integrity_check passed\n")
+					passed++
+				} else {
+					fmt.Printf("  ✗ SQLite integrity error: %v (result: %s)\n", err, checkResult)
+					failed++
+				}
+			} else {
+				fmt.Printf("  ✗ Failed to open SQLite database: %v\n", err)
+				failed++
+			}
 		} else {
 			fmt.Println("  ✗ SQLite database missing (run 'chaind daemon start' to create)")
 			failed++
@@ -109,7 +128,17 @@ var doctorCmd = &cobra.Command{
 			}
 		}
 
-		// 7. Check platform credentials
+		// 7. Check platform credentials & keyring
+		err := auth.SaveCredential("chaind_doctor_test", "ok")
+		if err == nil {
+			auth.DeleteCredential("chaind_doctor_test")
+			fmt.Println("  ✓ System go-keyring service available and writable")
+			passed++
+		} else {
+			fmt.Printf("  ✗ System go-keyring service unavailable: %v\n", err)
+			failed++
+		}
+
 		platforms := []string{"telegram", "matrix"}
 		for _, p := range platforms {
 			_, err := auth.GetCredential(p)

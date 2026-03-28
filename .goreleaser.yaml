@@ -3,7 +3,7 @@ project_name: chaind
 builds:
   - id: chaind
     env:
-      - CGO_ENABLED=0
+      - CGO_ENABLED=1
     ldflags:
       - -s -w
       - -X main.version={{.Version}}

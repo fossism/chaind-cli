@@ -204,32 +204,208 @@ func (t *TelegramAdapter) Watch(ctx context.Context, roomID string) (<-chan sche
 	return ch, nil
 }
 
+func parseChatID(roomID string) (int64, error) {
+	// Strip "telegram:" prefix if present
+	if len(roomID) > 9 && roomID[:9] == "telegram:" {
+		roomID = roomID[9:]
+	}
+	return strconv.ParseInt(roomID, 10, 64)
+}
+
 func (t *TelegramAdapter) Send(roomID, text string) (schema.Message, error) {
-	// Implementation calls to t.client.SendMessage(ctx, peer, opts) would go here
-	// Mock MTProto SendMessage for architectural proof
+	chatID, err := parseChatID(roomID)
+	if err != nil {
+		return schema.Message{}, fmt.Errorf("invalid telegram roomID: %w", err)
+	}
+
+	ctxExt := t.client.CreateContext()
+	msgRaw, err := ctxExt.SendMessage(chatID, &tg.MessagesSendMessageRequest{
+		Message: text,
+	})
+	if err != nil {
+		return schema.Message{}, fmt.Errorf("failed to send message: %w", err)
+	}
+
+	platformID := "unknown"
+	if msgRaw != nil {
+		platformID = strconv.Itoa(msgRaw.ID)
+	}
+
 	return schema.Message{
-		ID: ulid.Make().String(),
-		Platform: "telegram",
-		PlatformID: "mocked_mtproto_id",
+		ID:         ulid.Make().String(),
+		Platform:   "telegram",
+		PlatformID: platformID,
+		Room:       schema.Room{ID: fmt.Sprintf("telegram:%d", chatID)},
+		Author:     schema.Author{ID: "self"}, // would normally be the bot/user ID
+		Content:    schema.Content{Type: "text", Text: text},
+		Timestamp:  time.Now().UTC(),
 	}, nil
 }
 
 func (t *TelegramAdapter) Reply(msgID, text string) (schema.Message, error) {
-	return schema.Message{}, fmt.Errorf("reply using ReplyToMsgId param on SendMessageOpts")
+	// Need to fetch original message to get room/chat ID and platform message ID
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	origMsg, err := t.store.GetMessage(ctx, msgID)
+	if err != nil {
+		return schema.Message{}, fmt.Errorf("failed to find original message for reply: %w", err)
+	}
+
+	chatID, err := parseChatID(origMsg.Room.ID)
+	if err != nil {
+		return schema.Message{}, fmt.Errorf("invalid telegram roomID: %w", err)
+	}
+	replyToID, err := strconv.Atoi(origMsg.PlatformID)
+	if err != nil {
+		return schema.Message{}, fmt.Errorf("invalid telegram original message ID: %w", err)
+	}
+
+	ctxExt := t.client.CreateContext()
+	msgRaw, err := ctxExt.SendMessage(chatID, &tg.MessagesSendMessageRequest{
+		Message: text,
+		ReplyTo: &tg.InputReplyToMessage{ReplyToMsgID: replyToID},
+	})
+	if err != nil {
+		return schema.Message{}, fmt.Errorf("failed to send reply: %w", err)
+	}
+
+	platformID := "unknown"
+	if msgRaw != nil {
+		platformID = strconv.Itoa(msgRaw.ID)
+	}
+
+	return schema.Message{
+		ID:         ulid.Make().String(),
+		Platform:   "telegram",
+		PlatformID: platformID,
+		Room:       schema.Room{ID: fmt.Sprintf("telegram:%d", chatID)},
+		Author:     schema.Author{ID: "self"},
+		Content:    schema.Content{Type: "text", Text: text},
+		ParentID:   &origMsg.ID,
+		Timestamp:  time.Now().UTC(),
+	}, nil
 }
 
 func (t *TelegramAdapter) React(msgID, emoji string) error {
-	return fmt.Errorf("react using MessagesSendReactionRequest")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	origMsg, err := t.store.GetMessage(ctx, msgID)
+	if err != nil {
+		return fmt.Errorf("failed to find original message for react: %w", err)
+	}
+
+	chatID, err := parseChatID(origMsg.Room.ID)
+	if err != nil {
+		return fmt.Errorf("invalid telegram roomID: %w", err)
+	}
+	replyToID, err := strconv.Atoi(origMsg.PlatformID)
+	if err != nil {
+		return fmt.Errorf("invalid telegram original message ID: %w", err)
+	}
+
+	ctxExt := t.client.CreateContext()
+	inputPeer, err := ctxExt.ResolveInputPeerById(chatID)
+	if err != nil {
+		return fmt.Errorf("failed to resolve input peer: %w", err)
+	}
+
+	_, err = ctxExt.Raw.MessagesSendReaction(ctxExt, &tg.MessagesSendReactionRequest{
+		Peer:  inputPeer,
+		MsgID: replyToID,
+		Reaction: []tg.ReactionClass{
+			&tg.ReactionEmoji{Emoticon: emoji},
+		},
+	})
+	return err
 }
 
 func (t *TelegramAdapter) Ban(roomID, userID, reason string) error {
-	return fmt.Errorf("channelsEditBanned implementation")
+	chatID, err := parseChatID(roomID)
+	if err != nil {
+		return fmt.Errorf("invalid telegram roomID: %w", err)
+	}
+
+	uID, err := strconv.ParseInt(userID, 10, 64)
+	if err != nil {
+		return fmt.Errorf("invalid telegram userID: %w", err)
+	}
+
+	ctxExt := t.client.CreateContext()
+	// ban forever
+	_, err = ctxExt.BanChatMember(chatID, uID, 0)
+	if err != nil {
+		return fmt.Errorf("failed to ban user %d in chat %d: %w", uID, chatID, err)
+	}
+	return nil
 }
 
 func (t *TelegramAdapter) Mute(roomID, userID string, d time.Duration) error {
-	return fmt.Errorf("channelsEditBanned implementation")
+	chatID, err := parseChatID(roomID)
+	if err != nil {
+		return fmt.Errorf("invalid telegram roomID: %w", err)
+	}
+
+	uID, err := strconv.ParseInt(userID, 10, 64)
+	if err != nil {
+		return fmt.Errorf("invalid telegram userID: %w", err)
+	}
+
+	ctxExt := t.client.CreateContext()
+	until := int(time.Now().Add(d).Unix())
+	
+	inputPeerGroup, err := ctxExt.ResolveInputPeerById(chatID)
+	if err != nil {
+		return err
+	}
+	inputChan, ok := inputPeerGroup.(*tg.InputPeerChannel)
+	if !ok {
+		return fmt.Errorf("muting is currently only supported in channels/supergroups (need input peer channel)")
+	}
+	
+	inputPeerUser, err := ctxExt.ResolveInputPeerById(uID)
+	if err != nil {
+		return err
+	}
+	inputUser, ok := inputPeerUser.(*tg.InputPeerUser)
+	if !ok {
+		return fmt.Errorf("target user resolving failed")
+	}
+
+	// Mute via restrictions
+	bannedRights := tg.ChatBannedRights{
+		SendMessages: true,
+		UntilDate:    until,
+	}
+
+	_, err = ctxExt.Raw.ChannelsEditBanned(ctxExt, &tg.ChannelsEditBannedRequest{
+		Channel: &tg.InputChannel{ChannelID: inputChan.ChannelID, AccessHash: inputChan.AccessHash},
+		Participant: &tg.InputPeerUser{UserID: inputUser.UserID, AccessHash: inputUser.AccessHash},
+		BannedRights: bannedRights,
+	})
+	return err
 }
 
 func (t *TelegramAdapter) DeleteMessage(msgID string) error {
-	return fmt.Errorf("messagesDeleteMessages implementation")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	origMsg, err := t.store.GetMessage(ctx, msgID)
+	if err != nil {
+		return fmt.Errorf("failed to find message for delete: %w", err)
+	}
+
+	chatID, err := parseChatID(origMsg.Room.ID)
+	if err != nil {
+		return fmt.Errorf("invalid telegram roomID: %w", err)
+	}
+
+	targetID, err := strconv.Atoi(origMsg.PlatformID)
+	if err != nil {
+		return fmt.Errorf("invalid telegram message ID for delete: %w", err)
+	}
+
+	ctxExt := t.client.CreateContext()
+	return ctxExt.DeleteMessages(chatID, []int{targetID})
 }

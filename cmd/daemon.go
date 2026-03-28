@@ -49,6 +49,8 @@ var daemonCmd = &cobra.Command{
 
 		g, gCtx := errgroup.WithContext(ctx)
 
+		daemon.StartScheduler(gCtx, dbStore, router)
+
 		// Start StoreWriter for single-threaded sqlite inserts
 		g.Go(func() error {
 			dbStore.StartWriter(gCtx)

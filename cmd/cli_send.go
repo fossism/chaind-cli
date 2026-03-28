@@ -7,8 +7,12 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
+	"sync"
 
+	"github.com/fossism/chaind-cli/internal/format"
 	"github.com/spf13/cobra"
+	"golang.org/x/sync/errgroup"
 )
 
 var (
@@ -24,12 +28,13 @@ var sendCmd = &cobra.Command{
 	Use:   "send",
 	Short: "Send a message to a unified room",
 	Run: func(cmd *cobra.Command, args []string) {
-		payload := map[string]string{
-			"platform": sendPlatform,
-			"room":     sendRoom,
-			"text":     sendText,
+		payload := map[string]interface{}{
+			"platform":         sendPlatform,
+			"room":             sendRoom,
+			"text":             sendText,
+			"require_approval": sendApproval,
 		}
-		
+
 		body, _ := json.Marshal(payload)
 		req, err := http.NewRequest("POST", "http://unix/api/v1/messages/send", bytes.NewReader(body))
 		if err != nil {
@@ -64,10 +69,95 @@ var broadcastCmd = &cobra.Command{
 	Use:   "broadcast",
 	Short: "Broadcast a message to multiple rooms simultaneously",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("Broadcasting to %s: %s\n", sendRoom, sendText)
-		if sendDryRun {
-			fmt.Println("Dry run. No messages sent.")
+		if sendText == "" {
+			fmt.Println("Error: --text is required")
+			os.Exit(1)
 		}
+
+		if sendRoom == "" {
+			fmt.Println("Error: --rooms is required (e.g., matrix:!roomID,telegram:-10012345)")
+			os.Exit(1)
+		}
+
+		rooms := strings.Split(sendRoom, ",")
+
+		astNodes := format.ParseMarkdown(sendText)
+
+		var eg errgroup.Group
+		results := make(map[string]map[string]string)
+		var mu sync.Mutex
+
+		for _, combo := range rooms {
+			parts := strings.SplitN(combo, ":", 2)
+			if len(parts) != 2 {
+				fmt.Printf("Invalid room format (platform:room): %s\n", combo)
+				continue
+			}
+			platformStr, roomStr := parts[0], parts[1]
+
+			eg.Go(func() error {
+				var formatted string
+				switch platformStr {
+				case "telegram":
+					formatted = format.TelegramRenderer{}.Render(astNodes)
+				case "matrix":
+					formatted = format.MatrixRenderer{}.Render(astNodes)
+				default:
+					formatted = format.PlainRenderer{}.Render(astNodes)
+				}
+
+				if sendDryRun {
+					mu.Lock()
+					if results[platformStr] == nil {
+						results[platformStr] = make(map[string]string)
+					}
+					results[platformStr][roomStr] = "[DRY_RUN] " + formatted
+					mu.Unlock()
+					return nil
+				}
+
+				payload := map[string]interface{}{
+					"platform":         platformStr,
+					"room":             roomStr,
+					"text":             formatted,
+					"require_approval": sendApproval,
+				}
+
+				body, _ := json.Marshal(payload)
+				req, _ := http.NewRequest("POST", "http://unix/api/v1/messages/send", bytes.NewReader(body))
+				tok := os.Getenv("CHAIND_TOKEN")
+				if tok != "" {
+					req.Header.Set("Authorization", "Bearer "+tok)
+				}
+
+				resp, err := IPCClient().Do(req)
+				resText := ""
+				if err != nil {
+					resText = fmt.Sprintf("Error: %v", err)
+				} else {
+					defer resp.Body.Close()
+					respBody, _ := io.ReadAll(resp.Body)
+					resText = string(respBody)
+					if resp.StatusCode != http.StatusOK {
+						resText = fmt.Sprintf("HTTP %d: %s", resp.StatusCode, resText)
+					}
+				}
+
+				mu.Lock()
+				if results[platformStr] == nil {
+					results[platformStr] = make(map[string]string)
+				}
+				results[platformStr][roomStr] = resText
+				mu.Unlock()
+
+				return nil
+			})
+		}
+
+		_ = eg.Wait()
+
+		out, _ := json.MarshalIndent(results, "", "  ")
+		fmt.Println(string(out))
 	},
 }
 
@@ -79,9 +169,10 @@ func init() {
 	sendCmd.Flags().BoolVar(&sendApproval, "require-approval", false, "Require HitL")
 
 	broadcastCmd.Flags().StringVar(&sendPlatform, "platform", "matrix,telegram", "Target platforms")
-	broadcastCmd.Flags().StringVar(&sendRoom, "rooms", "", "Comma-separated rooms")
+	broadcastCmd.Flags().StringVar(&sendRoom, "rooms", "", "Comma-separated rooms (e.g. matrix:!room1,telegram:-100123)")
 	broadcastCmd.Flags().StringVar(&sendText, "text", "", "Message content")
-	broadcastCmd.Flags().BoolVar(&sendDryRun, "dry-run", false, "Test formats")
+	broadcastCmd.Flags().BoolVar(&sendDryRun, "dry-run", false, "Test formats without sending")
+	broadcastCmd.Flags().BoolVar(&sendApproval, "require-approval", false, "Require HitL")
 
 	rootCmd.AddCommand(sendCmd)
 	rootCmd.AddCommand(broadcastCmd)

@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"fmt"
 
 	"github.com/fossism/chaind-cli/internal/schema"
 )
@@ -129,4 +130,60 @@ func (s *Store) SaveUser(ctx context.Context, u schema.Author) error {
 	`
 	_, err := s.writeDB.ExecContext(ctx, query, u.ID, u.PlatformID, u.PlatformID, u.Username, u.DisplayName, u.IsBot)
 	return err
+}
+
+// GetMessage retrieves a single message by its canonical ID
+func (s *Store) GetMessage(ctx context.Context, id string) (*schema.Message, error) {
+	query := `
+		SELECT id, platform, platform_id, room_id, author_id, text, timestamp, root_id, parent_id, read, edited, deleted
+		FROM messages
+		WHERE id = ? LIMIT 1
+	`
+	
+	type flatMsg struct {
+		ID         string  `db:"id"`
+		Platform   string  `db:"platform"`
+		PlatformID string  `db:"platform_id"`
+		RoomID     string  `db:"room_id"`
+		AuthorID   string  `db:"author_id"`
+		Text       string  `db:"text"`
+		Timestamp  string  `db:"timestamp"`
+		RootID     *string `db:"root_id"`
+		ParentID   *string `db:"parent_id"`
+		Read       bool    `db:"read"`
+		Edited     bool    `db:"edited"`
+		Deleted    bool    `db:"deleted"`
+	}
+
+	var f flatMsg
+	err := s.db.GetContext(ctx, &f, query, id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("message not found")
+		}
+		return nil, err
+	}
+
+	msg := &schema.Message{
+		ID:         f.ID,
+		Platform:   f.Platform,
+		PlatformID: f.PlatformID,
+		Room: schema.Room{
+			ID: f.RoomID,
+		},
+		Author: schema.Author{
+			ID: f.AuthorID,
+		},
+		Content: schema.Content{
+			Text: f.Text,
+			Type: "text",
+		},
+		RootID:    f.RootID,
+		ParentID:  f.ParentID,
+		Read:      f.Read,
+		Edited:    f.Edited,
+		Deleted:   f.Deleted,
+	}
+
+	return msg, nil
 }

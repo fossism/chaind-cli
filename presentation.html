@@ -21,6 +21,7 @@
     --orange: #fbbf24;
     --indigo: #6366f1;
     --yellow: #f1fa8c;
+    --red: #ff3366;
     
     --font-head: 'Space Grotesk', sans-serif;
     --font-body: 'Outfit', sans-serif;
@@ -41,14 +42,14 @@
 
   /* Decorative Background Elements */
   .orb {
-    position: absolute; width: 450px; height: 450px;
-    border-radius: 50%; filter: blur(130px);
+    position: absolute; width: 500px; height: 500px;
+    border-radius: 50%; filter: blur(140px);
     opacity: 0.12; z-index: -1; animation: float 25s infinite alternate;
   }
-  .orb-1 { top: -100px; left: -100px; background: var(--cyan); }
-  .orb-2 { bottom: -100px; right: -100px; background: var(--purple); animation-delay: -5s; }
-  .orb-3 { top: 40%; left: 70%; background: var(--pink); animation-delay: -10s; }
-  .orb-4 { bottom: 20%; left: 10%; background: var(--orange); animation-delay: -15s; }
+  .orb-1 { top: -150px; left: -150px; background: var(--cyan); }
+  .orb-2 { bottom: -150px; right: -150px; background: var(--purple); animation-delay: -5s; }
+  .orb-3 { top: 30%; left: 60%; background: var(--pink); animation-delay: -12s; }
+  .orb-4 { bottom: 30%; left: 5%; background: var(--orange); animation-delay: -18s; }
 
   @keyframes float {
     0% { transform: translate(0, 0) scale(1); }
@@ -111,10 +112,11 @@
   }
   .dot { width: 8px; height: 8px; border-radius: 50%; margin-right: 0.7rem; background: currentColor; }
 
-  /* Diagrams & Visuals */
-  .diagram-container {
-    width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
-    position: relative;
+  /* Visual Elements */
+  .icon-box {
+    width: 60px; height: 60px; border-radius: 16px; background: rgba(255,255,255,0.05);
+    display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;
+    border: 1px solid var(--border);
   }
   
   .glass-stack {
@@ -125,7 +127,9 @@
     backdrop-filter: blur(12px); border-radius: 16px; padding: 1.2rem 1.8rem;
     display: flex; justify-content: space-between; align-items: center;
     position: relative; overflow: hidden;
+    transition: all 0.3s ease;
   }
+  .glass-item:hover { background: rgba(255,255,255,0.06); transform: scale(1.02); }
   .glass-item::after {
     content: ''; position: absolute; left: 0; top: 0; width: 4px; height: 100%;
     background: var(--cyan);
@@ -133,6 +137,33 @@
   .glass-item.green::after { background: var(--green); }
   .glass-item.pink::after { background: var(--pink); }
   .glass-item.orange::after { background: var(--orange); }
+  .glass-item.purple::after { background: var(--purple); }
+  .glass-item.yellow::after { background: var(--yellow); }
+
+  /* Story Visuals */
+  .story-bubble {
+    background: white; color: #1e293b; padding: 2rem; border-radius: 24px 24px 24px 4px;
+    font-size: 1.6rem; line-height: 1.4; box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+    position: relative; margin-bottom: 2rem;
+  }
+  .avatar {
+    width: 90px; height: 90px; border-radius: 50%; background: var(--indigo);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2.5rem; margin-bottom: 1.5rem; border: 3px solid #fff;
+  }
+
+  /* Diagrams */
+  .diagram-container {
+    width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  .pulse {
+    animation: pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+  }
+  @keyframes pulse-ring {
+    0% { transform: scale(0.8); opacity: 0.5; }
+    100% { transform: scale(1.5); opacity: 0; }
+  }
 
   /* Animations */
   .reveal { opacity: 0; transform: translateY(30px); transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1); }
@@ -150,18 +181,6 @@
     transition: width 0.4s ease; z-index: 100;
   }
 
-  /* Story Visuals */
-  .story-bubble {
-    background: white; color: #1e293b; padding: 2rem; border-radius: 24px 24px 24px 4px;
-    font-size: 1.6rem; line-height: 1.4; box-shadow: 0 15px 40px rgba(0,0,0,0.3);
-    position: relative; margin-bottom: 2rem;
-  }
-  .avatar {
-    width: 90px; height: 90px; border-radius: 50%; background: var(--indigo);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 2.5rem; margin-bottom: 1.5rem; border: 3px solid #fff;
-  }
-
   /* Terminal Aesthetic */
   .term-mockup {
     background: #0f172a; border: 1px solid var(--border); border-radius: 16px;
@@ -174,20 +193,40 @@
 
   pre {
     background: #0d1117; border: 1px solid #30363d; padding: 1.8rem;
-    border-radius: 16px; font-family: var(--font-code); font-size: 1.3rem;
+    border-radius: 16px; font-family: var(--font-code); font-size: 1.2rem;
     color: #c9d1d9; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.4);
     line-height: 1.5;
   }
   .json-key { color: #79c0ff; }
   .json-str { color: #a5d6ff; }
 
+  /* Comparison Boxes */
   .comparison-box {
     padding: 2rem; border-radius: 20px; border: 1px solid #30363d;
     background: rgba(13, 17, 23, 0.7); height: 100%; display: flex; flex-direction: column;
   }
   .comparison-box.bad { border-top: 5px solid var(--red); }
   .comparison-box.good { border-top: 5px solid var(--green); }
+  .comparison-box.neutral { border-top: 5px solid var(--orange); }
   .comparison-box h3 { margin-bottom: 1rem; }
+
+  /* Nerd Snipe Callout */
+  .nerd-snipe {
+    position: absolute; bottom: 2rem; left: 2rem;
+    background: rgba(34, 211, 238, 0.1); border: 1px solid var(--cyan);
+    padding: 1rem; border-radius: 12px; font-family: var(--font-code);
+    font-size: 0.9rem; max-width: 250px; opacity: 0.7;
+  }
+
+  /* Icons */
+  .icon-heart { color: var(--pink); animation: heart-beat 1.5s infinite; display: inline-block; }
+  @keyframes heart-beat {
+    0% { transform: scale(1); }
+    15% { transform: scale(1.3); }
+    30% { transform: scale(1); }
+    45% { transform: scale(1.15); }
+    60% { transform: scale(1); }
+  }
 
 </style>
 </head>
@@ -206,55 +245,85 @@
   <div class="slide center active">
     <div class="tag reveal d1"><span class="dot"></span>FOSS Hack 2026 Showcase</div>
     <h1 class="reveal d2">chaind<span style="color: var(--cyan)">.</span></h1>
-    <h2 class="reveal d3" style="font-weight: 300;">The Sovereign <span style="color: var(--pink)">Heart</span> of Your Digital Life</h2>
+    <h2 class="reveal d3" style="font-weight: 300;">The Sovereign <span class="icon-heart">❤️</span> of Your Digital Life</h2>
     <p class="reveal d4">A unified, local-first daemon turning the chaos of messaging into a single, beautiful API for your AI agents.</p>
     
-    <div class="reveal d5" style="display: flex; gap: 1rem; margin-top: 2rem;">
-        <span class="tag cyan">Go Implementation</span>
-        <span class="tag pink">Matrix · TG · WA</span>
-        <span class="tag purple">Sovereign AI</span>
+    <div class="reveal d5" style="display: flex; gap: 1.5rem; margin-top: 2rem;">
+        <span class="tag cyan">Pure Go / SQLite WAL</span>
+        <span class="tag purple">Sovereign India AI Enablement</span>
     </div>
   </div>
 
-  <!-- SLIDE 2: THE INDIAN STRUGGLE (FOSS UNITED/BODHYA) -->
+  <!-- SLIDE 2: ALICE'S STRUGGLE -->
+  <div class="slide">
+    <div class="tag reveal d1"><span class="dot"></span>The Human Struggle</div>
+    <h2 class="reveal d2">Meet <span style="color: var(--cyan)">Alice</span>.</h2>
+    <div class="split">
+        <div class="reveal d3">
+            <div class="story-bubble">
+                "I manage a FOSS community. My students are on WhatsApp, my core devs are on Matrix, and I spend 3 hours a day just copy-pasting..."
+            </div>
+            <p>Meet Alice. She's the heart of her community, but she's drowning in <b>Fragmentation Chaos</b>.</p>
+        </div>
+        <div class="reveal d4 diagram-container">
+            <svg viewBox="0 0 400 400" width="400">
+                <circle cx="200" cy="200" r="60" fill="var(--indigo)" opacity="0.2" class="pulse" />
+                <circle cx="200" cy="200" r="40" fill="var(--indigo)" />
+                <g class="nodes">
+                    <circle cx="80" cy="80" r="25" fill="var(--cyan)" />
+                    <circle cx="320" cy="80" r="25" fill="var(--green)" />
+                    <circle cx="80" cy="320" r="25" fill="var(--orange)" />
+                    <circle cx="320" cy="320" r="25" fill="var(--pink)" />
+                </g>
+                <path d="M110 110 L170 170" stroke="var(--red)" stroke-width="2" stroke-dasharray="5,5" />
+                <path d="M290 110 L230 170" stroke="var(--red)" stroke-width="2" stroke-dasharray="5,5" />
+                <path d="M110 290 L170 230" stroke="var(--red)" stroke-width="2" stroke-dasharray="5,5" />
+                <path d="M290 290 L230 230" stroke="var(--red)" stroke-width="2" stroke-dasharray="5,5" />
+            </svg>
+        </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 3: THE INDIAN CONTEXT -->
   <div class="slide">
     <div class="tag reveal d1"><span class="dot"></span>The Indian Context</div>
-    <h2 class="reveal d2">Communities are <span style="color: var(--orange)">Fractured</span>.</h2>
+    <h2 class="reveal d2">The <span style="color: var(--orange)">Indian</span> FOSS Ecosystem.</h2>
     <div class="split">
       <div class="reveal d3">
-        <p>In the Indian FOSS ecosystem, management is a logistical nightmare.</p>
+        <p>In India, management is a logistical nightmare.</p>
         <p><b>FOSS United</b> manages 100+ college chapters. <b>Bodhya</b> builds regional tech knowledge. But where are the members?</p>
-        <ul>
-            <li><b style="color:var(--green)">WhatsApp:</b> Where the students are.</li>
-            <li><b style="color:var(--orange)">Telegram:</b> Where the chatters live.</li>
-            <li><b style="color:var(--cyan)">Matrix:</b> Where the serious work happens.</li>
-        </ul>
+        <div class="glass-stack" style="margin-top: 2rem;">
+            <div class="glass-item orange"><strong>Telegram</strong> <span>The Chatters</span></div>
+            <div class="glass-item green"><strong>WhatsApp</strong> <span>The Students</span></div>
+            <div class="glass-item"><strong>Matrix</strong> <span>The Core Devs</span></div>
+        </div>
       </div>
       <div class="reveal d4">
         <div class="avatar" style="background:var(--orange)">🇮🇳</div>
         <div class="story-bubble">
-            "I manage a FOSS United chapter. I spend 3 hours a day copy-pasting announcements across 4 apps just to keep everyone synced."
+            "Alice spends 3 hours a day copy-pasting announcements across 4 apps just to keep 500 students in the loop."
         </div>
-        <p class="hl-red" style="font-size: 1.4rem;">Alice is tired. Fragmentation is winning.</p>
+        <p class="hl-red" style="font-size: 1.4rem;">Fragmentation is winning.</p>
       </div>
     </div>
   </div>
 
-  <!-- SLIDE 3: CHAOS DIAGRAM -->
+  <!-- SLIDE 4: THE CHAOS -->
   <div class="slide center">
-    <div class="tag reveal d1"><span class="dot"></span>The Problem</div>
+    <div class="tag reveal d1"><span class="dot"></span>The Nightmare</div>
     <h2 class="reveal d2">The <span style="color: var(--red)">Chaos</span> of Fragmentation</h2>
     <div class="reveal d3 diagram-container">
-        <svg viewBox="0 0 500 300" width="600">
-            <rect x="50" y="50" width="100" height="50" rx="10" fill="var(--cyan)" opacity="0.8" />
-            <text x="75" y="80" fill="#000" font-weight="bold">Matrix</text>
-            <rect x="350" y="70" width="100" height="50" rx="10" fill="var(--orange)" opacity="0.8" />
-            <text x="365" y="100" fill="#000" font-weight="bold">Telegram</text>
-            <rect x="100" y="220" width="110" height="50" rx="10" fill="var(--green)" opacity="0.8" />
-            <text x="115" y="250" fill="#000" font-weight="bold">WhatsApp</text>
-            <rect x="300" y="210" width="80" height="50" rx="10" fill="var(--red)" opacity="0.8" />
-            <text x="325" y="240" fill="#000" font-weight="bold">IRC</text>
-            <!-- Broken messy lines -->
+        <svg viewBox="0 0 600 400" width="700">
+            <g class="protocols">
+                <circle cx="100" cy="100" r="40" fill="var(--cyan)" opacity="0.8" />
+                <text x="75" y="105" fill="#000" font-weight="bold">Matrix</text>
+                <circle cx="500" cy="100" r="40" fill="var(--orange)" opacity="0.8" />
+                <text x="465" y="105" fill="#000" font-weight="bold">Telegram</text>
+                <circle cx="100" cy="300" r="40" fill="var(--green)" opacity="0.8" />
+                <text x="65" y="305" fill="#000" font-weight="bold">WhatsApp</text>
+                <circle cx="500" cy="300" r="40" fill="var(--pink)" opacity="0.8" />
+                <text x="480" y="305" fill="#000" font-weight="bold">IRC</text>
+            </g>
             <path d="M150 80 L350 100" stroke="var(--red)" stroke-width="2" stroke-dasharray="8,4" />
             <path d="M210 240 L350 120" stroke="var(--red)" stroke-width="2" stroke-dasharray="8,4" />
             <path d="M100 100 L150 220" stroke="var(--red)" stroke-width="2" stroke-dasharray="8,4" />
@@ -265,154 +334,131 @@
     <p class="reveal d4 hl-red" style="margin-top: 2rem;">Alice needs a unified brain. Not another bridge.</p>
   </div>
 
-  <!-- SLIDE 4: THE VERCEL FALLACY (BENTO) -->
+  <!-- SLIDE 5: VERCEL FALLACY -->
   <div class="slide center">
     <div class="tag reveal d1"><span class="dot"></span>Market Error</div>
-    <h2 class="reveal d2">The "Chat SDK" <span style="color: var(--pink)">Fallacy</span></h2>
-    <p class="reveal d3">Industry solutions like <b>Vercel Chat SDK</b> or Zapier are built for SaaS, not for Alice.</p>
-    <div class="bento-grid reveal d4">
+    <h2 class="reveal d2">Why "Cloud Bots" <span style="color: var(--pink)">Fail</span> Alice</h2>
+    <div class="bento-grid reveal d3">
         <div class="bento-card" style="grid-column: span 2;">
-            <h3 style="color: var(--pink)">Cloud Dependency</h3>
-            <p style="font-size: 1.4rem;">Alice must send <b>her private messages</b> to their servers. She lose sovereignty and privacy.</p>
+            <div class="icon-box"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--pink)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></div>
+            <h3 style="color: var(--pink)">Privacy Silos</h3>
+            <p style="font-size: 1.4rem;">Vercel Chat SDK requires Alice to send <b>her private messages</b> to their cloud. She loses sovereignty.</p>
         </div>
         <div class="bento-card">
-            <h3 style="color: var(--pink)">Webhook Only</h3>
-            <p style="font-size: 1.4rem;">Requires public IPs and TLS. Impossible for Alice's local-first agents.</p>
+            <div class="icon-box"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--pink)" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></div>
+            <h3 style="color: var(--pink)">Webhook Hell</h3>
+            <p style="font-size: 1.4rem;">Needs public IPs and TLS. Impossible for Alice's local-first setup.</p>
         </div>
         <div class="bento-card">
+            <div class="icon-box"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--pink)" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></div>
             <h3 style="color: var(--pink)">Bot-Restricted</h3>
-            <p style="font-size: 1.4rem;">WhatsApp "Bots" have 24h windows. They can't read DMs or history natively.</p>
+            <p style="font-size: 1.4rem;">WhatsApp "Bots" have 24h windows. They can't read DMs natively.</p>
         </div>
         <div class="bento-card" style="grid-column: span 2; background: rgba(34, 211, 238, 0.05); border-color: var(--cyan);">
+            <div class="icon-box" style="background: rgba(34, 211, 238, 0.1); border-color: var(--cyan);"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg></div>
             <h3 style="color: var(--cyan)">The chaind Difference</h3>
             <p style="font-size: 1.4rem;">We act as <b>YOU</b>. Using native protocols like MTProto and whatsmeow. No limits. No cloud. Local sovereign power.</p>
         </div>
     </div>
   </div>
 
-  <!-- SLIDE 5: INTRODUCING CHAIND -->
+  <!-- SLIDE 6: THE REVEAL -->
   <div class="slide">
     <div class="tag reveal d1"><span class="dot"></span>The Solution</div>
     <div class="split">
         <div class="reveal d2 diagram-container">
-            <svg viewBox="0 0 400 400" width="400">
-                <circle cx="200" cy="200" r="150" fill="rgba(34, 211, 238, 0.05)" stroke="var(--cyan)" stroke-width="2" stroke-dasharray="10,5" />
-                <rect x="150" y="150" width="100" height="100" rx="20" fill="var(--bg)" stroke="var(--cyan)" stroke-width="4" />
-                <path d="M180 200 L220 200 M200 180 L200 220" stroke="var(--cyan)" stroke-width="4" stroke-linecap="round" />
+            <svg viewBox="0 0 400 400" width="450">
+                <circle cx="200" cy="200" r="120" fill="rgba(34, 211, 238, 0.1)" stroke="var(--cyan)" stroke-width="2" class="pulse" />
+                <rect x="140" y="140" width="120" height="120" rx="30" fill="var(--bg)" stroke="var(--cyan)" stroke-width="5" />
+                <path d="M170 200 L230 200 M200 170 L200 230" stroke="var(--cyan)" stroke-width="5" stroke-linecap="round" />
+                <g stroke="var(--cyan)" stroke-width="2" stroke-dasharray="10,5">
+                    <line x1="50" y1="50" x2="140" y2="140" /><line x1="350" y1="50" x2="260" y2="140" />
+                    <line x1="50" y1="350" x2="140" y2="260" /><line x1="350" y1="350" x2="260" y2="260" />
+                </g>
             </svg>
         </div>
         <div class="reveal d3">
             <h2>Alice's <span style="color: var(--green)">Superpower</span>.</h2>
-            <p><b>chaind</b> is a local daemon that sits quietly on Alice's machine, logs in as her, and exposes 4 networks as a single local <b>Unix Socket</b>.</p>
+            <p><b>chaind</b> sits quietly in the background, logging into Alice's accounts as her, and turning the mess into a <b>Single Universal Stream</b>.</p>
             <ul>
-                <li><span class="hl-cyan">Account-Native:</span> No Bot API limits.</li>
+                <li><span class="hl-cyan">Sovereign:</span> Alice's data stays on her disk.</li>
                 <li><span class="hl-cyan">Local-First:</span> No public IPs needed.</li>
-                <li><span class="hl-cyan">Agent-Driven:</span> Built for scripts and AI.</li>
+                <li><span class="hl-cyan">Agent-Native:</span> Built for scripts and AI.</li>
             </ul>
         </div>
     </div>
   </div>
 
-  <!-- SLIDE 6: USE CASE 1 - THE PERSONAL ASSISTANT -->
-  <div class="slide">
-    <div class="tag reveal d1"><span class="dot"></span>Use Case #1</div>
-    <h2 class="reveal d2">The <span style="color: var(--green)">Omni-Assistant</span>.</h2>
-    <div class="split">
-      <div class="reveal d3">
-        <div class="avatar" style="background:var(--green)">🧔</div>
-        <div class="story-bubble">
-            "I don't want to check 4 apps. I want my <b>Local AI Agent</b> to summarize everything and tell me what's important."
-        </div>
-        <p>With <b>chaind</b>, a simple script queries 3 networks, passes context to a local <b>Ollama</b> model, and outputs a daily summary.</p>
-      </div>
-      <div class="reveal d4">
-        <pre><code><span style="color:#8b949e"># A single command to know everything</span>
-chaind read --all --since 24h \
-  | ollama run summary-bot</code></pre>
-        <p class="hl-cyan" style="font-size: 1.3rem; margin-top: 1rem;">Native context across Matrix, TG, and WhatsApp in one pipe.</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- SLIDE 7: USE CASE 2 - THE COMMUNITY GUARD -->
-  <div class="slide">
-    <div class="tag reveal d1"><span class="dot"></span>Use Case #2</div>
-    <h2 class="reveal d2">The <span style="color: var(--orange)">Community Guard</span>.</h2>
-    <div class="split-rev">
-      <div class="reveal d3 term-mockup">
-        <div class="term-bar"><div class="term-dot" style="background: #ff5f56;"></div><div class="term-dot" style="background: #ffbd2e;"></div><div class="term-dot" style="background: #27c93f;"></div></div>
-        <div class="term-body">
-            <span class="hl-red">ALERT:</span> Spam detected in Telegram.<br>
-            <span class="hl-cyan">ACTION:</span> chaind moderate --user @bot \<br>
-            &nbsp;&nbsp;--platforms matrix,telegram,irc<br><br>
-            <span class="hl-green">SUCCESS:</span> Banned on all networks.
-        </div>
-      </div>
-      <div class="reveal d4">
-        <p>A spammer joins 3 networks at once. In the "Old Way," Alice is too slow.</p>
-        <p>In the <b>chaind Way</b>, her agent detects the pattern and <b>instantly executes a multi-platform ban</b>.</p>
-        <p class="hl-orange" style="font-size: 1.5rem;">Total time: < 2 seconds.</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- SLIDE 8: THE GRAND VISION -->
-  <div class="slide center">
-    <div class="tag reveal d1"><span class="dot"></span>Broad Vision</div>
-    <h2 class="reveal d2">Agents Can Do <span style="color: var(--cyan)">Anything</span>.</h2>
-    <div class="bento-grid reveal d3">
-        <div class="bento-card"><h3>Moderation</h3><p>Unified cross-platform banning.</p></div>
-        <div class="bento-card"><h3>Bridging</h3><p>Custom rules-based message sync.</p></div>
-        <div class="bento-card"><h3>Support</h3><p>Auto-reply to common FAQs locally.</p></div>
-        <div class="bento-card"><h3>Archiving</h3><p>Searchable history across all DMs.</p></div>
-        <div class="bento-card"><h3>Broadcast</h3><p>Emergency alerts to everyone.</p></div>
-        <div class="bento-card"><h3>Analysis</h3><p>Sentiment analysis of the chat.</p></div>
-    </div>
-  </div>
-
-  <!-- SLIDE 9: THE STACK (ISOMETRIC CARDS) -->
+  <!-- SLIDE 7: ARCHITECTURE OVERVIEW -->
   <div class="slide center">
     <div class="tag reveal d1"><span class="dot"></span>Technical Excellence</div>
     <h2>The 5-Layer <span style="color: var(--purple)">Brutalist</span> Stack</h2>
-    <div style="width: 800px; margin: 3rem auto 0; text-align: left;">
+    <div style="width: 850px; margin: 2rem auto 0; text-align: left;">
         <div class="glass-stack">
             <div class="glass-item reveal d2"><strong>5. IPC Layer</strong> <span style="color: var(--indigo)">Unix Socket · capability tokens</span></div>
             <div class="glass-item reveal d3 pink"><strong>4. Store Writer</strong> <span style="color: var(--pink)">SQLite WAL · batch inserts</span></div>
             <div class="glass-item reveal d4"><strong>3. Canonical Normalizer</strong> <span style="color: var(--cyan)">ULID sorting · unified schema</span></div>
             <div class="glass-item reveal d5 green"><strong>2. Protocol Adapters</strong> <span style="color: var(--green)">MTProto · whatsmeow · matrix</span></div>
-            <div class="glass-item reveal d6" style="border-left-color: var(--orange)"><strong>1. chaind Daemon</strong> <span style="color: var(--orange)">isolated supervisors</span></div>
+            <div class="glass-item reveal d6 orange"><strong>1. chaind Daemon</strong> <span style="color: var(--orange)">isolated supervisors</span></div>
         </div>
     </div>
   </div>
 
-  <!-- SLIDE 10: ARCHITECTURE - ADAPTERS -->
+  <!-- SLIDE 8: RELIABILITY -->
   <div class="slide">
-    <div class="tag reveal d1"><span class="dot"></span>Layer 1 & 2</div>
-    <h2 class="reveal d2">Native Account <span style="color: var(--cyan)">Adapters</span></h2>
+    <div class="tag reveal d1"><span class="dot"></span>Layer 1: Reliability</div>
+    <h2 class="reveal d2">Isolated <span style="color: var(--orange)">Supervisors</span>.</h2>
+    <div class="split">
+        <div class="reveal d3">
+            <p>Most Go daemons use a single <code>errgroup</code>. If one adapter fails, the whole process dies.</p>
+            <p><b>chaind</b> uses isolated supervisor loops with exponential backoff. If Telegram MTProto hits a FLOOD_WAIT, it waits alone. Matrix and WhatsApp keep firing.</p>
+            <p class="hl-orange">Reliability through isolation.</p>
+        </div>
+        <div class="reveal d4 diagram-container">
+            <svg viewBox="0 0 400 300" width="400">
+                <rect x="50" y="50" width="80" height="80" rx="10" fill="var(--green)" opacity="0.8" />
+                <rect x="150" y="50" width="80" height="80" rx="10" fill="var(--red)" opacity="0.8" />
+                <path d="M190 90 L190 110 A20 20 0 0 1 170 130" stroke="#fff" fill="none" stroke-width="2" />
+                <text x="160" y="150" fill="var(--red)" font-size="12">Backoff...</text>
+                <rect x="250" y="50" width="80" height="80" rx="10" fill="var(--green)" opacity="0.8" />
+                <rect x="50" y="150" width="280" height="100" rx="10" fill="rgba(34, 211, 238, 0.1)" stroke="var(--cyan)" />
+                <text x="140" y="200" fill="var(--cyan)">Daemon Core (ALIVE)</text>
+            </svg>
+        </div>
+    </div>
+    <div class="nerd-snipe reveal d5">Nerd Snipe: Supervisor loop is only 15 lines of Go. Zero dependencies.</div>
+  </div>
+
+  <!-- SLIDE 9: ADAPTERS -->
+  <div class="slide">
+    <div class="tag reveal d1"><span class="dot"></span>Layer 2: Native Protocol</div>
+    <h2 class="reveal d2">Account <span style="color: var(--cyan)">Adapters</span></h2>
     <div class="split">
       <div class="reveal d3">
         <p>We bypass Bot APIs entirely. We use the protocols humans use.</p>
         <ul>
-          <li><b style="color:var(--orange)">Telegram:</b> Full <b>MTProto</b> via <code>gotd/td</code>. We handle DC migrations and session rotation natively.</li>
+          <li><b style="color:var(--orange)">Telegram:</b> Full <b>MTProto</b> via <code>gotd/td</code>. We handle DC migrations natively.</li>
           <li><b style="color:var(--green)">WhatsApp:</b> Reverse-engineered <b>whatsmeow</b>. We act as a linked device.</li>
           <li><b style="color:var(--cyan)">Matrix:</b> Production-grade <b>mautrix-go</b>.</li>
         </ul>
       </div>
       <div class="reveal d4">
-        <p class="hl-red" style="font-size: 1.4rem; padding: 2rem; border-left: 4px solid var(--red); background: rgba(255,51,102,0.1);">
-          <b>Isolated Supervisors:</b> Every adapter runs in its own goroutine with exponential backoff. If Telegram crashes, Matrix stays alive. No shared failures.
-        </p>
+        <div class="comparison-box good">
+            <h3 style="color:var(--green)">Why MTProto?</h3>
+            <p style="font-size: 1.3rem;">Bot API can't read user DMs. MTProto can. <b>chaind</b> gives your agent the same access you have on your phone.</p>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- SLIDE 11: ARCHITECTURE - NORMALIZATION -->
+  <!-- SLIDE 10: NORMALIZATION -->
   <div class="slide">
-    <div class="tag reveal d1"><span class="dot"></span>Layer 3</div>
+    <div class="tag reveal d1"><span class="dot"></span>Layer 3: Normalization</div>
     <h2 class="reveal d2">Universal <span style="color: var(--cyan)">Language</span></h2>
     <div class="split">
       <div class="reveal d3">
-        <p>Every proprietary event is ruthlessly squashed into a single, versioned JSON schema.</p>
+        <p>An agent shouldn't have to know what a "Matrix Event" or a "Telegram Update" looks like.</p>
+        <p>We normalize everything into a <b>Canonical JSON Schema</b>.</p>
         <p><b style="color:var(--green)">ULIDs:</b> We use time-sortable IDs. Database pagination is <code>O(log n)</code> without secondary indexes.</p>
       </div>
       <div class="reveal d4">
@@ -428,68 +474,267 @@ chaind read --all --since 24h \
     </div>
   </div>
 
-  <!-- SLIDE 12: ARCHITECTURE - SQLITE -->
+  <!-- SLIDE 11: SQLITE -->
   <div class="slide">
-    <div class="badge reveal">Layer 4</div>
-    <h2 class="reveal d1">The <span class="hl-green">Sovereign Store</span></h2>
+    <div class="tag reveal d1"><span class="dot"></span>Layer 4: Storage</div>
+    <h2 class="reveal d2">The <span style="color: var(--green)">Sovereign Store</span></h2>
     <div class="split-rev">
-      <div class="reveal d2 terminal">
-        <div class="term-header"><div class="term-btn r"></div><div class="term-btn y"></div><div class="term-btn g"></div></div>
-        <div class="term-body">
+      <div class="reveal d3 term-mockup">
+        <div class="term-bar"><div class="term-dot" style="background: #ff5f56;"></div><div class="term-dot" style="background: #ffbd2e;"></div><div class="term-dot" style="background: #27c93f;"></div></div>
+        <div class="term-content">
             <span style="color:#8b949e">// SQLite WAL Mode</span><br>
             PRAGMA journal_mode=WAL;<br>
             <span style="color:#8b949e">// One writer, many readers</span><br>
             SetMaxOpenConns(1);<br><br>
-            <span class="hl-green">GOAL:</span> 100% data integrity under concurrent load.
+            <span class="hl-green">GOAL:</span> 100% data integrity under load.
         </div>
       </div>
-      <div class="reveal d3">
+      <div class="reveal d4">
         <p>Alice's messages live in a local SQLite DB powered by <code>modernc.org/sqlite</code> (Pure Go).</p>
-        <p><b>The Solution:</b> A single <b>StoreWriter Goroutine</b>. Adapters push to a buffered channel; one goroutine flushes them in batches.</p>
+        <p><b>The Solution:</b> A single <b>StoreWriter Goroutine</b> handles all writes via a buffered channel to prevent <code>SQLITE_BUSY</code> errors.</p>
         <p class="hl-cyan">Zero lag. Zero database locks.</p>
       </div>
     </div>
   </div>
 
-  <!-- SLIDE 13: SECURITY - ZERO TRUST -->
-  <div class="slide center">
-    <div class="tag reveal d1"><span class="dot"></span>Privacy & Security</div>
-    <h2>Zero-Trust <span style="color: var(--pink)">Sovereignty</span></h2>
-    <div class="split reveal d2" style="margin-top: 2rem;">
-        <div class="comparison-box good">
-            <h3 style="color: var(--indigo)">Unix Socket (0600)</h3>
-            <p style="font-size: 1.4rem">Hard OS-level boundaries. No network ingress. Only you talk to your daemon.</p>
+  <!-- SLIDE 12: IPC -->
+  <div class="slide">
+    <div class="tag reveal d1"><span class="dot"></span>Layer 5: IPC</div>
+    <h2 class="reveal d2">The <span style="color: var(--indigo)">Nervous System</span></h2>
+    <div class="split">
+        <div class="reveal d3">
+            <p><b>Unix Socket (0600):</b> The sovereign choice. No network ingress. Only processes on Alice's machine can talk to <b>chaind</b>.</p>
+            <p><b>JSON Envelope:</b> Any language can talk to it. Python, Node, Go, or a simple <code>socat</code> command.</p>
         </div>
-        <div class="comparison-box good">
-            <h3 style="color: var(--indigo)">PII Scrubbing</h3>
-            <p style="font-size: 1.4rem">Regex filtering for +91 phone numbers and Aadhaar enforced at the IPC output layer.</p>
+        <div class="reveal d4 term-mockup">
+            <div class="term-bar"><div class="term-dot" style="background: #ff5f56;"></div><div class="term-dot" style="background: #ffbd2e;"></div><div class="term-dot" style="background: #27c93f;"></div></div>
+            <div class="term-content">
+                $ echo '{"cmd":"read"}' | nc -U /tmp/chaind.sock<br><br>
+                <span style="color: var(--cyan);">[RECV] 50 messages...</span>
+            </div>
         </div>
     </div>
-    <p class="reveal d3 hl-green" style="margin-top: 2rem;">Alice's messages stay Alice's messages.</p>
   </div>
 
-  <!-- SLIDE 14: THE LIVE DEMO TRANSITION -->
+  <!-- SLIDE 13: CAPABILITY TOKENS -->
+  <div class="slide">
+    <div class="tag reveal d1"><span class="dot"></span>Security: Tokens</div>
+    <h2 class="reveal d2">Granular <span style="color: var(--purple)">Permissions</span>.</h2>
+    <div class="split-rev">
+        <div class="reveal d3">
+            <div class="glass-stack">
+                <div class="glass-item purple"><strong>Tier 0: Owner</strong> <span>Full access (CLI)</span></div>
+                <div class="glass-item pink"><strong>Tier 2: ReadWrite</strong> <span>Send & Read</span></div>
+                <div class="glass-item yellow"><strong>Tier 4: SendOnly</strong> <span>Announcements</span></div>
+            </div>
+        </div>
+        <div class="reveal d4">
+            <p>We don't give agents the keys to the castle. We issue <b>Capability Tokens</b> scoped to specific rooms and tiers.</p>
+            <p>Alice's helpdesk agent can only read the <code>#helpdesk</code> room. It can't see her DMs.</p>
+        </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 14: PII SCRUBBING -->
+  <div class="slide">
+    <div class="tag reveal d1"><span class="dot"></span>Security: Privacy</div>
+    <h2 class="reveal d2">Local <span style="color: var(--pink)">PII Scrubbing</span>.</h2>
+    <div class="split">
+        <div class="reveal d3">
+            <p>Privacy is a first-class citizen. <b>chaind</b> scrubs sensitive data at the IPC layer.</p>
+            <ul>
+                <li><span style="color: var(--green)">+91 Phone Numbers</span></li>
+                <li><span style="color: var(--green)">Aadhaar Numbers</span></li>
+                <li><span style="color: var(--green)">Email Addresses</span></li>
+            </ul>
+            <p>Alice's local AI sees the message context but <b>not the user's phone number</b>.</p>
+        </div>
+        <div class="reveal d4">
+<pre><code>{
+  "text": "Call me at <span class="hl-red">[SCRUBBED]</span>",
+  "meta": { "pii_detected": <span style="color:#79c0ff">true</span> }
+}</code></pre>
+        </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 15: USE CASE 1 - ASSISTANT -->
+  <div class="slide">
+    <div class="tag reveal d1"><span class="dot"></span>Use Case #1</div>
+    <h2 class="reveal d2">The <span style="color: var(--green)">Omni-Assistant</span>.</h2>
+    <div class="split">
+      <div class="reveal d3">
+        <div class="avatar" style="background:var(--green)">🧔</div>
+        <div class="story-bubble">
+            "I want my daily summary from Matrix and WhatsApp."
+        </div>
+        <p>With <b>chaind</b>, a simple script queries 3 networks and pipes to a local <b>Ollama</b> model.</p>
+      </div>
+      <div class="reveal d4">
+        <pre><code>chaind read --all --since 24h \
+  | ollama run summary-bot</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 16: USE CASE 2 - GUARD -->
+  <div class="slide">
+    <div class="tag reveal d1"><span class="dot"></span>Use Case #2</div>
+    <h2 class="reveal d2">The <span style="color: var(--orange)">Community Guard</span>.</h2>
+    <div class="split-rev">
+      <div class="reveal d3 term-mockup">
+        <div class="term-bar"><div class="term-dot" style="background: #ff5f56;"></div><div class="term-dot" style="background: #ffbd2e;"></div><div class="term-dot" style="background: #27c93f;"></div></div>
+        <div class="term-content">
+            <span class="hl-red">ALERT:</span> Spam detected.<br>
+            <span class="hl-cyan">ACTION:</span> chaind moderate --user @bot \<br>
+            &nbsp;&nbsp;--platforms matrix,telegram<br>
+            <span class="hl-green">SUCCESS:</span> Obliterated.
+        </div>
+      </div>
+      <div class="reveal d4">
+        <p>Detect a spammer once. Ban them <b>everywhere</b> instantly.</p>
+        <p class="hl-orange" style="font-size: 1.8rem;">Total time: <b>< 2 seconds.</b></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 17: USE CASE 3 - BODHYA -->
+  <div class="slide">
+    <div class="tag reveal d1"><span class="dot"></span>Use Case #3</div>
+    <h2 class="reveal d2">Bridging <span style="color: var(--yellow)">Languages</span>.</h2>
+    <div class="split">
+      <div class="reveal d3">
+        <div class="avatar" style="background:var(--yellow)">🇮🇳</div>
+        <div class="story-bubble">
+            "Support students in <b>Hindi, Tamil, and Marathi</b> natively on WhatsApp."
+        </div>
+        <p>A Bodhya agent translates queries and replies in regional languages instantly via chaind's WhatsApp bridge.</p>
+      </div>
+      <div class="reveal d4">
+        <pre><code>chaind watch --room students \
+  | python3 bodhya_llm.py \
+  | chaind reply --text "नमस्ते"</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 18: EVERYTHING IS A PIPE -->
+  <div class="slide">
+    <div class="tag reveal d1"><span class="dot"></span>Developer UX</div>
+    <h2 class="reveal d2">Everything is a <span style="color: var(--cyan)">Pipe</span>.</h2>
+    <div class="split">
+        <div class="reveal d3">
+            <p><b>chaind stream</b> allows you to pipe anything directly into a chat room as a live code block.</p>
+            <p>Monitor build logs, server health, or long-running tests directly from Matrix or Telegram.</p>
+        </div>
+        <div class="reveal d4 term-mockup">
+            <div class="term-bar"><div class="term-dot" style="background: #ff5f56;"></div><div class="term-dot" style="background: #ffbd2e;"></div><div class="term-dot" style="background: #27c93f;"></div></div>
+            <div class="term-content">
+                $ make build 2>&1 | \<br>
+                &nbsp;&nbsp;<b>chaind stream --room dev</b><br><br>
+                <span style="color:var(--yellow)">[Matrix] Build started...</span><br>
+                <span style="color:var(--green)">[Matrix] Success in 42s.</span>
+            </div>
+        </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 19: THE TIME MACHINE -->
   <div class="slide center">
-    <div class="tag reveal d1"><span class="dot"></span>Live Execution</div>
-    <h1 class="reveal d2" style="font-size: 5rem;">Ready for the <span style="color: var(--green)">Magic</span>?</h1>
-    <p class="reveal d3">Switching to terminal to show the power of <b>chaind</b>.</p>
-    <div class="reveal d4 term-mockup" style="width: 600px; margin-top: 2rem;">
-        <div class="term-content center" style="padding: 1.5rem;">
+    <div class="tag reveal d1"><span class="dot"></span>FTS5 Mastery</div>
+    <h2 class="reveal d2">The <span style="color: var(--pink)">Time Machine</span> Search</h2>
+    <p class="reveal d3">Search 3 years of history across Matrix, TG, and WhatsApp in <b>milliseconds</b>.</p>
+    <div class="reveal d4 term-mockup" style="width: 800px; margin-top: 2rem;">
+        <div class="term-content">
+            $ chaind search "github.com/fosscu" --since 365d<br><br>
+            <b>[WhatsApp]</b> Found 12 matches.<br>
+            <b>[Matrix]</b> Found 45 matches.<br>
+            <span class="hl-green">Time taken: 8ms.</span>
+        </div>
+    </div>
+    <p class="reveal d5" style="margin-top: 2rem;">Powered by SQLite's FTS5 virtual table and ULID clustering.</p>
+  </div>
+
+  <!-- SLIDE 20: UNIX PHILOSOPHY -->
+  <div class="slide center">
+    <div class="tag reveal d1"><span class="dot"></span>Philosophy</div>
+    <h2 class="reveal d2">The <span style="color: var(--cyan)">Unix Way</span> of Messaging</h2>
+    <div class="reveal d3 diagram-container">
+        <svg viewBox="0 0 600 200" width="800">
+            <rect x="50" y="70" width="120" height="60" rx="10" fill="var(--cyan)" opacity="0.8" />
+            <text x="75" y="105" fill="#000" font-weight="bold">chaind watch</text>
+            <path d="M170 100 L230 100" stroke="#fff" stroke-width="3" />
+            <rect x="240" y="70" width="120" height="60" rx="10" fill="var(--pink)" opacity="0.8" />
+            <text x="285" y="105" fill="#000" font-weight="bold">grep</text>
+            <path d="M360 100 L420 100" stroke="#fff" stroke-width="3" />
+            <rect x="430" y="70" width="120" height="60" rx="10" fill="var(--green)" opacity="0.8" />
+            <text x="450" y="105" fill="#000" font-weight="bold">chaind send</text>
+        </svg>
+    </div>
+    <p class="reveal d4">Build powerful bots using tools you already know. No framework required.</p>
+  </div>
+
+  <!-- SLIDE 21: SELF-HEALING (DOCTOR) -->
+  <div class="slide">
+    <div class="tag reveal d1"><span class="dot"></span>Operations</div>
+    <h2 class="reveal d2">Production <span style="color: var(--green)">Rigour</span>.</h2>
+    <div class="split">
+        <div class="reveal d3">
+            <p><b>chaind doctor</b> is a self-diagnostic suite that identifies and fixes common operational issues automatically.</p>
+            <ul>
+                <li>PID file staleness</li>
+                <li>Socket permission errors</li>
+                <li>SQLite integrity checks</li>
+                <li>Credential backend status</li>
+            </ul>
+        </div>
+        <div class="reveal d4 term-mockup">
+            <div class="term-bar"><div class="term-dot" style="background: #ff5f56;"></div><div class="term-dot" style="background: #ffbd2e;"></div><div class="term-dot" style="background: #27c93f;"></div></div>
+            <div class="term-content">
+                $ chaind doctor --fix<br>
+                <span class="hl-green">[OK]</span> Config valid.<br>
+                <span class="hl-red">[ERR]</span> PID file stale. Fixing...<br>
+                <span class="hl-green">[OK]</span> Socket permissions (0600).<br>
+                <span class="hl-cyan">DONE. Ready to start.</span>
+            </div>
+        </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 22: THE FUTURE & MOAT -->
+  <div class="slide center">
+    <div class="tag reveal d1"><span class="dot"></span>The Moat</div>
+    <h2 class="reveal d2">Built for the <span style="color: var(--yellow)">Sovereign AI</span> Era.</h2>
+    <div class="bento-grid reveal d3">
+        <div class="bento-card"><h3>Pure Go</h3><p>No CGO. Cross-compiles to anything.</p></div>
+        <div class="bento-card"><h3>Host-Agnostic</h3><p>Runs on a $15 Raspberry Pi.</p></div>
+        <div class="bento-card"><h3>Privacy-Hardened</h3><p>No telemetry. No cloud. No compromise.</p></div>
+    </div>
+    <p class="reveal d4 hl-cyan" style="margin-top: 2rem;">Vercel targets SaaS developers. We target Sovereign Humans.</p>
+  </div>
+
+  <!-- SLIDE 23: DEMO TRANSITION -->
+  <div class="slide center">
+    <div class="tag reveal d1"><span class="dot"></span>Final Demo</div>
+    <h1 class="reveal d2" style="font-size: 6rem;">Ready for <span style="color: var(--green)">Magic</span>?</h1>
+    <p class="reveal d3" style="font-size: 2.5rem;">Switching to terminal to show <b>chaind</b> in action.</p>
+    <div class="reveal d4 term-mockup" style="width: 600px; margin-top: 3rem;">
+        <div class="term-content center" style="padding: 2rem;">
             $ chaind watch --all --agent
         </div>
     </div>
   </div>
 
-  <!-- SLIDE 15: CONCLUSION -->
+  <!-- SLIDE 24: CONCLUSION -->
   <div class="slide center">
     <div class="tag reveal d1"><span class="dot"></span>FOSS Hack 2026</div>
     <h1>chaind<span style="color: var(--cyan)">.</span></h1>
     <h2 style="font-weight: 300;">Empowering <span style="color: var(--green)">Alice</span>. Empowering You.</h2>
-    <p style="margin-top: 2rem; color: #fff; font-family: var(--font-code);">github.com/fosscu/chaind</p>
-    <div class="reveal d3" style="margin-top: 3rem; display: flex; gap: 2rem;">
-        <span class="tag cyan">Go</span>
-        <span class="tag pink">SQLite</span>
-        <span class="tag purple">Sovereign AI</span>
+    <p style="margin-top: 2.5rem; color: #fff; font-family: var(--font-code); font-size: 2.5rem;">github.com/fosscu/chaind</p>
+    <div class="reveal d3" style="margin-top: 4rem; display: flex; gap: 3rem;">
+        <span class="tag yellow">Indian FOSS</span>
+        <span class="tag">Sovereign AI</span>
+        <span class="tag cyan">Pure Go</span>
     </div>
   </div>
 
@@ -516,6 +761,20 @@ chaind read --all --since 24h \
     if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
       if (currentSlide > 0) currentSlide--;
       updateSlide();
+    }
+  });
+
+  // Touch Support
+  let touchStartX = 0;
+  window.addEventListener('touchstart', e => touchStartX = e.touches[0].clientX);
+  window.addEventListener('touchend', e => {
+    const touchEndX = e.changedTouches[0].clientX;
+    if (touchStartX - touchEndX > 50) {
+        if (currentSlide < slides.length - 1) currentSlide++;
+        updateSlide();
+    } else if (touchEndX - touchStartX > 50) {
+        if (currentSlide > 0) currentSlide--;
+        updateSlide();
     }
   });
 
