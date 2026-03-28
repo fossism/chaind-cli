@@ -15,6 +15,7 @@ import (
 	"io"
 
 	"github.com/fossism/chaind-cli/internal/daemon"
+	"github.com/fossism/chaind-cli/internal/schema"
 	"github.com/fossism/chaind-cli/internal/search"
 	"github.com/fossism/chaind-cli/internal/store"
 	"github.com/rs/zerolog/log"
@@ -58,13 +59,20 @@ func (s *IPCServer) handleWatch(w http.ResponseWriter, r *http.Request) {
 	platform := r.URL.Query().Get("platform")
 	room := r.URL.Query().Get("room")
 	
-	adp, err := s.router.Get(platform)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+	var ch <-chan schema.Message
+	var err error
+
+	if platform == "" {
+		ch, err = s.router.WatchAll(r.Context())
+	} else {
+		adp, errGet := s.router.Get(platform)
+		if errGet != nil {
+			http.Error(w, errGet.Error(), http.StatusBadRequest)
+			return
+		}
+		ch, err = adp.Watch(r.Context(), room)
 	}
 
-	ch, err := adp.Watch(r.Context(), room)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

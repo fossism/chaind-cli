@@ -90,9 +90,11 @@ func (t *TelegramAdapter) Start(ctx context.Context) error {
 }
 
 func (t *TelegramAdapter) handleMessage(msg tg.MessageClass) error {
+	log.Debug().Msg("Telegram handleMessage called")
 	switch m := msg.(type) {
 	case *tg.Message:
 		text := m.Message
+		log.Debug().Str("text", text).Str("sender", strconv.FormatInt(m.FromID.(*tg.PeerUser).UserID, 10)).Msg("Telegram message received")
 		if text == "" {
 			return nil
 		}

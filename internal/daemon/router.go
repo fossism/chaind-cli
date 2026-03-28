@@ -1,6 +1,7 @@
 package daemon
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -96,3 +97,38 @@ func (r *AdapterRouter) Mute(platform, roomID, userID string, duration time.Dura
 	}
 	return adp.Mute(roomID, userID, duration)
 }
+
+// WatchAll multiplexes watch streams from all registered adapters into a single channel.
+func (r *AdapterRouter) WatchAll(ctx context.Context) (<-chan schema.Message, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	out := make(chan schema.Message, 100)
+	var wg sync.WaitGroup
+
+	for _, adp := range r.adapters {
+		wg.Add(1)
+		go func(a adapters.Adapter) {
+			defer wg.Done()
+			ch, err := a.Watch(ctx, "")
+			if err != nil {
+				return
+			}
+			for msg := range ch {
+				select {
+				case out <- msg:
+				case <-ctx.Done():
+					return
+				}
+			}
+		}(adp)
+	}
+
+	go func() {
+		wg.Wait()
+		close(out)
+	}()
+
+	return out, nil
+}
+

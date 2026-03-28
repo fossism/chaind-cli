@@ -102,14 +102,14 @@ var watchCmd = &cobra.Command{
 }
 
 func init() {
-	readCmd.Flags().StringVar(&readPlatform, "platform", "matrix", "Target platform")
+	readCmd.Flags().StringVar(&readPlatform, "platform", "", "Target platform (leave blank for all)")
 	readCmd.Flags().StringVar(&readRoom, "room", "", "Filter by room alias")
 	readCmd.Flags().StringVar(&readSince, "since", "24h", "Time window")
 	readCmd.Flags().IntVar(&readLimit, "limit", 50, "Max messages")
 	readCmd.Flags().StringVar(&readToken, "token", "", "Capability Token (default: $CHAIND_TOKEN)")
 	readCmd.Flags().BoolVar(&readAgent, "agent", false, "Strict JSON output for agent scripts")
 
-	watchCmd.Flags().StringVar(&readPlatform, "platform", "matrix", "Target platform")
+	watchCmd.Flags().StringVar(&readPlatform, "platform", "", "Target platform (leave blank for all)")
 	watchCmd.Flags().StringVar(&readRoom, "room", "", "Watch specific room")
 	watchCmd.Flags().StringVar(&readToken, "token", "", "Capability Token (default: $CHAIND_TOKEN)")
 	watchCmd.Flags().BoolVar(&readAgent, "agent", false, "Strict JSON stream")
