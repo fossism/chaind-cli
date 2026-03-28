@@ -14,7 +14,7 @@ func TestMessageSerialization(t *testing.T) {
 		Platform:      "telegram",
 		PlatformID:    "12345",
 		Room:          Room{ID: "telegram:67890", Name: "Test Room", Type: "group"},
-		Author:        Author{ID: "user1", DisplayName: "Alice", IsBot: false},
+		Author:        Author{ID: "user1", DisplayName: "Riya", IsBot: false},
 		Content: Content{
 			Type: "text",
 			Text: "Hello World",

@@ -88,6 +88,32 @@ func (s *Store) GetToken(ctx context.Context, name string) (*Token, error) {
 	return &t, nil
 }
 
+func (s *Store) SaveToken(ctx context.Context, t Token) error {
+	query := `
+		INSERT INTO tokens (name, tier, rooms, pii_scrub, expires, revoked) 
+		VALUES (?, ?, ?, ?, ?, ?)
+		ON CONFLICT(name) DO UPDATE SET
+			tier = excluded.tier,
+			rooms = excluded.rooms,
+			pii_scrub = excluded.pii_scrub,
+			expires = excluded.expires,
+			revoked = excluded.revoked
+	`
+	_, err := s.writeDB.ExecContext(ctx, query, t.Name, t.Tier, t.Rooms, t.PiiScrub, t.Expires, t.Revoked)
+	return err
+}
+
+func (s *Store) ListTokens(ctx context.Context) ([]Token, error) {
+	var tokens []Token
+	err := s.db.SelectContext(ctx, &tokens, "SELECT name, tier, rooms, pii_scrub, expires, revoked FROM tokens")
+	return tokens, err
+}
+
+func (s *Store) RevokeToken(ctx context.Context, name string) error {
+	_, err := s.writeDB.ExecContext(ctx, "UPDATE tokens SET revoked = 1 WHERE name = ?", name)
+	return err
+}
+
 func (s *Store) GetSyncState(ctx context.Context, platform, key string) (string, error) {
 	query := `SELECT value FROM sync_state WHERE platform = ? AND key = ?`
 	var val string

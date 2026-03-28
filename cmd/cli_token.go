@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"time"
 
-	"github.com/fossism/chaind-cli/internal/auth"
+	"github.com/fossism/chaind-cli/internal/store"
 	"github.com/spf13/cobra"
 )
 
@@ -36,12 +38,34 @@ var tokenIssueCmd = &cobra.Command{
 
 		name := tokName
 		if name == "" {
-			name = tokRole
+			name = token[:8] // use prefix as default name if not provided
 		}
 
-		// Store it in the OS Keyring so the daemon can validate it
-		if err := auth.SaveCredential("chaind-token-"+name, token); err != nil {
-			fmt.Printf("Failed to persist token: %v\n", err)
+		tier := 2
+		if tokRole == "owner" {
+			tier = 0
+		} else if tokRole == "readonly" {
+			tier = 4
+		}
+
+		st, err := store.NewStore()
+		if err != nil {
+			fmt.Printf("Failed to open store: %v\n", err)
+			return
+		}
+		defer st.Close()
+
+		t := store.Token{
+			Name:     token,
+			Tier:     tier,
+			Rooms:    tokScopes,
+			PiiScrub: tokPii,
+			Expires:  time.Now().Add(365 * 24 * time.Hour).Format(time.RFC3339), // default 1 year
+			Revoked:  false,
+		}
+
+		if err := st.SaveToken(context.Background(), t); err != nil {
+			fmt.Printf("Failed to persist token to DB: %v\n", err)
 			return
 		}
 
@@ -55,30 +79,55 @@ var tokenListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List active capability tokens",
 	Run: func(cmd *cobra.Command, args []string) {
-		// Check for the common roles
-		roles := []string{"owner", "agent", "readonly"}
+		st, err := store.NewStore()
+		if err != nil {
+			fmt.Printf("Failed to open store: %v\n", err)
+			return
+		}
+		defer st.Close()
+
+		tokens, err := st.ListTokens(context.Background())
+		if err != nil {
+			fmt.Printf("Failed to list tokens: %v\n", err)
+			return
+		}
+
 		fmt.Println("Active tokens:")
-		for _, role := range roles {
-			_, err := auth.GetCredential("chaind-token-" + role)
-			if err == nil {
-				fmt.Printf("  ✓ %s\n", role)
+		for _, t := range tokens {
+			status := "active"
+			if t.Revoked {
+				status = "revoked"
 			}
+			fmt.Printf("  %s... (Tier: %d, Scopes: %s, Status: %s)\n", t.Name[:8], t.Tier, t.Rooms, status)
 		}
 	},
 }
 
 var tokenRevokeCmd = &cobra.Command{
-	Use:   "revoke [name]",
+	Use:   "revoke [token_prefix]",
 	Short: "Revoke a token",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		name := args[0]
-		// Overwrite with empty string to effectively revoke
-		if err := auth.SaveCredential("chaind-token-"+name, ""); err != nil {
-			fmt.Printf("Failed to revoke: %v\n", err)
+		prefix := args[0]
+		st, err := store.NewStore()
+		if err != nil {
+			fmt.Printf("Failed to open store: %v\n", err)
 			return
 		}
-		fmt.Printf("Revoked token: %s\n", name)
+		defer st.Close()
+
+		tokens, _ := st.ListTokens(context.Background())
+		for _, t := range tokens {
+			if t.Name == prefix || (len(prefix) >= 8 && t.Name[:len(prefix)] == prefix) {
+				if err := st.RevokeToken(context.Background(), t.Name); err != nil {
+					fmt.Printf("Failed to revoke %s: %v\n", t.Name, err)
+				} else {
+					fmt.Printf("Revoked token: %s\n", t.Name)
+				}
+				return
+			}
+		}
+		fmt.Printf("Token not found: %s\n", prefix)
 	},
 }
 

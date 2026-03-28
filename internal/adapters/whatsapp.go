@@ -206,14 +206,15 @@ func (w *WhatsAppAdapter) Watch(ctx context.Context, roomID string) (<-chan sche
 
 func (w *WhatsAppAdapter) Send(roomID, text string) (schema.Message, error) {
 	roomStr := strings.TrimPrefix(roomID, "whatsapp:")
+	if !strings.Contains(roomStr, "@") {
+		roomStr = roomStr + "@" + types.DefaultUserServer
+	}
 	jid, err := types.ParseJID(roomStr)
 	if err != nil {
-		if !strings.Contains(roomStr, "@") {
-			jid = types.NewJID(roomStr, types.DefaultUserServer)
-		} else {
-			return schema.Message{}, fmt.Errorf("invalid whatsapp jid format: %w", err)
-		}
+		return schema.Message{}, fmt.Errorf("invalid whatsapp jid format: %w", err)
 	}
+
+	log.Info().Str("room", roomID).Str("target_jid", jid.String()).Msg("WhatsApp dispatching message")
 
 	waMsg := &waE2E.Message{
 		Conversation: proto.String(text),
@@ -228,28 +229,111 @@ func (w *WhatsAppAdapter) Send(roomID, text string) (schema.Message, error) {
 		ID:         ulid.Make().String(),
 		Platform:   "whatsapp",
 		PlatformID: resp.ID,
-		Room:       schema.Room{ID: roomID},
+		Room:       schema.Room{ID: "whatsapp:" + jid.String()},
 		Content:    schema.Content{Type: "text", Text: text},
 		Timestamp:  resp.Timestamp,
 	}, nil
 }
 
 func (w *WhatsAppAdapter) Reply(msgID, text string) (schema.Message, error) {
-	return schema.Message{}, fmt.Errorf("whatsapp reply partially implemented, use send")
+	ctx := context.Background()
+	msg, err := w.store.GetMessage(ctx, msgID)
+	if err != nil {
+		return schema.Message{}, err
+	}
+
+	roomStr := strings.TrimPrefix(msg.Room.ID, "whatsapp:")
+	chatJID, err := types.ParseJID(roomStr)
+	if err != nil {
+		return schema.Message{}, err
+	}
+
+	senderJID, err := types.ParseJID(msg.Author.ID)
+	if err != nil {
+		senderJID = chatJID
+	}
+
+	waMsg := &waE2E.Message{
+		ExtendedTextMessage: &waE2E.ExtendedTextMessage{
+			Text: proto.String(text),
+			ContextInfo: &waE2E.ContextInfo{
+				StanzaID:      proto.String(msg.PlatformID),
+				Participant:   proto.String(senderJID.ToNonAD().String()),
+				QuotedMessage: &waE2E.Message{Conversation: proto.String(msg.Content.Text)},
+			},
+		},
+	}
+
+	resp, err := w.client.SendMessage(ctx, chatJID, waMsg)
+	if err != nil {
+		return schema.Message{}, err
+	}
+
+	return schema.Message{
+		ID:         ulid.Make().String(),
+		Platform:   "whatsapp",
+		PlatformID: resp.ID,
+		Room:       msg.Room,
+		Content:    schema.Content{Type: "text", Text: text},
+		Timestamp:  resp.Timestamp,
+		ParentID:   &msgID,
+	}, nil
 }
 
 func (w *WhatsAppAdapter) React(msgID, emoji string) error {
-	return fmt.Errorf("whatsapp react not yet implemented")
+	ctx := context.Background()
+	msg, err := w.store.GetMessage(ctx, msgID)
+	if err != nil {
+		return err
+	}
+
+	roomStr := strings.TrimPrefix(msg.Room.ID, "whatsapp:")
+	chatJID, err := types.ParseJID(roomStr)
+	if err != nil {
+		return err
+	}
+
+	senderJID, err := types.ParseJID(msg.Author.ID)
+	if err != nil {
+		senderJID = chatJID
+	}
+
+	reactionMsg := w.client.BuildReaction(chatJID, senderJID, msg.PlatformID, emoji)
+	_, err = w.client.SendMessage(ctx, chatJID, reactionMsg)
+	return err
 }
 
 func (w *WhatsAppAdapter) Ban(roomID, userID, reason string) error {
-	return fmt.Errorf("whatsapp moderation not supported")
+	chatJID, err := types.ParseJID(strings.TrimPrefix(roomID, "whatsapp:"))
+	if err != nil {
+		return err
+	}
+	userJID, err := types.ParseJID(userID)
+	if err != nil {
+		return err
+	}
+
+	_, err = w.client.UpdateGroupParticipants(context.Background(), chatJID, []types.JID{userJID}, whatsmeow.ParticipantChangeRemove)
+	return err
 }
 
 func (w *WhatsAppAdapter) Mute(roomID, userID string, d time.Duration) error {
-	return fmt.Errorf("whatsapp moderation not supported")
+	return fmt.Errorf("whatsapp mute not supported via this adapter")
 }
 
 func (w *WhatsAppAdapter) DeleteMessage(msgID string) error {
-	return fmt.Errorf("whatsapp delete not supported")
+	ctx := context.Background()
+	msg, err := w.store.GetMessage(ctx, msgID)
+	if err != nil {
+		return err
+	}
+
+	chatJID, err := types.ParseJID(strings.TrimPrefix(msg.Room.ID, "whatsapp:"))
+	if err != nil {
+		return err
+	}
+
+	revokeMsg := w.client.BuildRevoke(chatJID, types.EmptyJID, msg.PlatformID)
+	_, err = w.client.SendMessage(ctx, chatJID, revokeMsg)
+	return err
 }

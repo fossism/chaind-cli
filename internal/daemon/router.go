@@ -53,6 +53,33 @@ func (r *AdapterRouter) Send(platform, roomID, text string) (schema.Message, err
 	return adp.Send(roomID, text)
 }
 
+// Global Reply Coordinator
+func (r *AdapterRouter) Reply(platform, msgID, text string) (schema.Message, error) {
+	adp, err := r.Get(platform)
+	if err != nil {
+		return schema.Message{}, err
+	}
+	return adp.Reply(msgID, text)
+}
+
+// Global React Coordinator
+func (r *AdapterRouter) React(platform, msgID, emoji string) error {
+	adp, err := r.Get(platform)
+	if err != nil {
+		return err
+	}
+	return adp.React(msgID, emoji)
+}
+
+// Global Delete Coordinator
+func (r *AdapterRouter) DeleteMessage(platform, msgID string) error {
+	adp, err := r.Get(platform)
+	if err != nil {
+		return err
+	}
+	return adp.DeleteMessage(msgID)
+}
+
 // Global Moderate Coordinator
 func (r *AdapterRouter) Ban(platform, roomID, userID, reason string) error {
 	adp, err := r.Get(platform)

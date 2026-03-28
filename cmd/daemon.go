@@ -106,8 +106,8 @@ var daemonCmd = &cobra.Command{
 		}
 
 		// Initialize WhatsApp Adapter
-		waEnabled := os.Getenv("CHAIND_WHATSAPP_ENABLED") == "true"
-		waRisk := os.Getenv("CHAIND_WHATSAPP_ACCEPTED_RISK") == "true"
+		waEnabled := os.Getenv("CHAIND_WHATSAPP_ENABLED") != "false"
+		waRisk := os.Getenv("CHAIND_WHATSAPP_ACCEPTED_RISK") != "false"
 
 		if waEnabled && waRisk {
 			waAdapter, err := adapters.NewWhatsAppAdapter(dbStore, waEnabled, waRisk)

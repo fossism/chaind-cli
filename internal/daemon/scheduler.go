@@ -51,3 +51,8 @@ func processOutbox(db *store.Store, router *AdapterRouter) {
 		db.DB().Exec("DELETE FROM outbox WHERE id = ?", item.ID)
 	}
 }
+
+// ProcessOutbox is the exported entry point for scheduler tests.
+func ProcessOutbox(db *store.Store, router *AdapterRouter) {
+	processOutbox(db, router)
+}

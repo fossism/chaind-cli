@@ -3,468 +3,1141 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>chaind - The Sovereign OS for Your DMs</title>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@300;400;600;800&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+<title>chaind - Final Demo Day</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=Instrument+Sans:wght@400;500;600;700&family=Syne:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #050508;
-    --card-bg: rgba(255, 255, 255, 0.03);
-    --border: rgba(255, 255, 255, 0.1);
-    --text: #f8fafc;
-    --muted: #94a3b8;
-    
-    /* Vibrant Cyber-Pastels */
-    --cyan: #22d3ee;
-    --pink: #fb7185;
-    --purple: #a78bfa;
-    --green: #4ade80;
-    --orange: #fbbf24;
-    --indigo: #6366f1;
-    --yellow: #f1fa8c;
-    --red: #ff3366;
-    
-    --font-head: 'Space Grotesk', sans-serif;
-    --font-body: 'Outfit', sans-serif;
-    --font-code: 'JetBrains Mono', monospace;
+    --bg: #071019;
+    --bg-elevated: rgba(10, 18, 28, 0.82);
+    --card-bg: rgba(255, 255, 255, 0.045);
+    --card-strong: rgba(255, 255, 255, 0.07);
+    --border: rgba(255, 255, 255, 0.11);
+    --border-strong: rgba(255, 255, 255, 0.22);
+    --text: #f5f7fb;
+    --muted: #9fb0c5;
+    --cyan: #55d6ff;
+    --green: #5ee59a;
+    --amber: #ffc663;
+    --pink: #ff7fa8;
+    --red: #ff6a70;
+    --indigo: #7b8cff;
+    --yellow: #f7f39a;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Instrument Sans', sans-serif;
+    --font-code: 'IBM Plex Mono', monospace;
+    --shadow-soft: 0 28px 70px rgba(0, 0, 0, 0.35);
+    --shadow-hard: 0 18px 40px rgba(0, 0, 0, 0.48);
   }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html,
   body {
-    background: var(--bg);
+    width: 100%;
+    height: 100%;
+  }
+
+  body {
+    position: relative;
+    overflow: hidden;
     color: var(--text);
     font-family: var(--font-body);
-    width: 100vw;
-    height: 100vh;
-    overflow: hidden;
-    perspective: 1000px;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(85, 214, 255, 0.18), transparent 30%),
+      radial-gradient(circle at 85% 18%, rgba(255, 127, 168, 0.14), transparent 28%),
+      radial-gradient(circle at 70% 80%, rgba(94, 229, 154, 0.14), transparent 28%),
+      linear-gradient(180deg, #071019 0%, #09131d 44%, #05090f 100%);
+    perspective: 1200px;
   }
 
-  /* Decorative Background Elements */
-  .orb {
-    position: absolute; width: 500px; height: 500px;
-    border-radius: 50%; filter: blur(140px);
-    opacity: 0.12; z-index: -1; animation: float 25s infinite alternate;
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    mask-image: radial-gradient(circle at center, black 32%, transparent 86%);
+    opacity: 0.35;
+    pointer-events: none;
   }
-  .orb-1 { top: -150px; left: -150px; background: var(--cyan); }
-  .orb-2 { bottom: -150px; right: -150px; background: var(--purple); animation-delay: -5s; }
-  .orb-3 { top: 30%; left: 60%; background: var(--pink); animation-delay: -12s; }
-  .orb-4 { bottom: 30%; left: 5%; background: var(--orange); animation-delay: -18s; }
+
+  .orb {
+    position: fixed;
+    width: 32rem;
+    height: 32rem;
+    border-radius: 50%;
+    filter: blur(120px);
+    opacity: 0.12;
+    z-index: 0;
+    animation: float 22s ease-in-out infinite alternate;
+    pointer-events: none;
+  }
+
+  .orb-1 { top: -10rem; left: -9rem; background: var(--cyan); }
+  .orb-2 { right: -10rem; bottom: -10rem; background: var(--pink); animation-delay: -4s; }
+  .orb-3 { top: 32%; left: 60%; background: var(--green); animation-delay: -8s; }
+  .orb-4 { bottom: 20%; left: 10%; background: var(--amber); animation-delay: -12s; }
 
   @keyframes float {
-    0% { transform: translate(0, 0) scale(1); }
-    100% { transform: translate(120px, 60px) scale(1.3); }
+    0% { transform: translate3d(0, 0, 0) scale(1); }
+    100% { transform: translate3d(4rem, 2rem, 0) scale(1.12); }
   }
 
-  .grid-bg {
-    position: absolute; inset: 0;
-    background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.04) 1px, transparent 0);
-    background-size: 40px 40px;
-    mask-image: radial-gradient(circle at center, black, transparent);
-    z-index: 0;
+  #progress {
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    height: 4px;
+    width: 0;
+    z-index: 120;
+    background: linear-gradient(90deg, var(--cyan), var(--green), var(--amber));
+    transition: width 0.35s ease;
   }
 
-  /* Presentation Structure */
-  #deck { width: 100%; height: 100%; position: relative; z-index: 2; }
-  
+  #deck-meta {
+    position: fixed;
+    top: 1.2rem;
+    right: 1.2rem;
+    z-index: 120;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: rgba(7, 16, 25, 0.76);
+    backdrop-filter: blur(16px);
+    box-shadow: var(--shadow-hard);
+    font-family: var(--font-code);
+    font-size: 0.82rem;
+    letter-spacing: 0.02em;
+  }
+
+  #meta-act {
+    color: var(--muted);
+  }
+
+  #meta-slide {
+    color: var(--text);
+  }
+
+  #deck {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+  }
+
   .slide {
-    position: absolute; inset: 0;
-    padding: 3rem 6rem;
-    display: flex; flex-direction: column; justify-content: center;
-    opacity: 0; pointer-events: none;
-    transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1);
-    transform: scale(0.96) translateY(15px);
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 5.25rem 5.5rem 4.5rem;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(1.1rem) scale(0.985);
+    transition: opacity 0.65s ease, transform 0.65s ease;
   }
-  .slide.active { opacity: 1; pointer-events: all; transform: scale(1) translateY(0); }
 
-  /* Typography */
-  h1 { font-family: var(--font-head); font-size: 6.5rem; font-weight: 700; line-height: 0.9; margin-bottom: 1.2rem; letter-spacing: -0.04em; }
-  h2 { font-family: var(--font-head); font-size: 4.2rem; font-weight: 500; line-height: 1.1; margin-bottom: 1.5rem; letter-spacing: -0.02em; }
-  h3 { font-family: var(--font-head); font-size: 2.6rem; font-weight: 500; margin-bottom: 0.8rem; color: var(--cyan); }
-  p { font-size: 1.8rem; line-height: 1.4; color: var(--muted); margin-bottom: 1.5rem; max-width: 1100px; font-weight: 300; }
-  b { color: #fff; font-weight: 600; }
+  .slide.active {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0) scale(1);
+  }
 
-  /* Layout Components */
-  .center { align-items: center; text-align: center; }
-  .center p { text-align: center; }
-  .bento-grid {
-    display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: minmax(180px, auto);
-    gap: 1.2rem; width: 100%; margin-top: 1.5rem;
+  .slide-header {
+    position: absolute;
+    top: 1.8rem;
+    left: 2.4rem;
+    right: 2.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
   }
-  .bento-card {
-    background: var(--card-bg); border: 1px solid var(--border);
-    backdrop-filter: blur(12px); border-radius: 24px; padding: 1.8rem;
-    display: flex; flex-direction: column; justify-content: center;
-    transition: all 0.3s ease;
+
+  .header-right {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.7rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
-  .bento-card:hover { transform: translateY(-5px); border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); }
-  
-  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; }
-  .split-rev { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 4rem; align-items: center; }
-  
-  /* Badges & Accents */
+
+  .center {
+    align-items: center;
+    text-align: center;
+  }
+
+  .center p,
+  .center .compact-list,
+  .center .proof-note {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-head);
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+  }
+
+  h1 {
+    font-size: clamp(4.8rem, 8vw, 7.6rem);
+    margin-bottom: 1rem;
+  }
+
+  h2 {
+    font-size: clamp(2.9rem, 5vw, 4.4rem);
+    margin-bottom: 1.25rem;
+    max-width: 18ch;
+  }
+
+  .center h2 {
+    max-width: 20ch;
+  }
+
+  h3 {
+    font-size: 1.55rem;
+    margin-bottom: 0.75rem;
+    color: var(--text);
+  }
+
+  p {
+    color: var(--muted);
+    font-size: clamp(1.15rem, 1.45vw, 1.5rem);
+    line-height: 1.45;
+    max-width: 45rem;
+    margin-bottom: 1rem;
+  }
+
+  strong,
+  b {
+    color: var(--text);
+    font-weight: 700;
+  }
+
+  code {
+    font-family: var(--font-code);
+    font-size: 0.9em;
+    color: #d8e6ff;
+  }
+
+  .tag,
+  .act-label,
+  .status-chip,
+  .metric-pill,
+  .command-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.52rem 0.95rem;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    backdrop-filter: blur(14px);
+    background: rgba(255, 255, 255, 0.045);
+    white-space: nowrap;
+  }
+
+  .tag,
+  .act-label,
+  .status-chip {
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
   .tag {
-    display: inline-flex; align-items: center; padding: 0.5rem 1.2rem;
-    background: rgba(255,255,255,0.05); border: 1px solid var(--border);
-    border-radius: 100px; font-family: var(--font-head); font-size: 1rem;
-    text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1.2rem;
     color: var(--cyan);
   }
-  .dot { width: 8px; height: 8px; border-radius: 50%; margin-right: 0.7rem; background: currentColor; }
 
-  /* Visual Elements */
-  .icon-box {
-    width: 60px; height: 60px; border-radius: 16px; background: rgba(255,255,255,0.05);
-    display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;
+  .tag.yellow,
+  .status-chip.next {
+    color: var(--amber);
+  }
+
+  .tag.cyan {
+    color: var(--cyan);
+  }
+
+  .tag.pink {
+    color: var(--pink);
+  }
+
+  .tag.green {
+    color: var(--green);
+  }
+
+  .dot {
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 12px currentColor;
+  }
+
+  .status-chip.live {
+    color: var(--green);
+    border-color: rgba(94, 229, 154, 0.32);
+    background: rgba(94, 229, 154, 0.1);
+  }
+
+  .status-chip.prototype {
+    color: var(--amber);
+    border-color: rgba(255, 198, 99, 0.34);
+    background: rgba(255, 198, 99, 0.1);
+  }
+
+  .status-chip.next {
+    border-color: rgba(255, 198, 99, 0.34);
+    background: rgba(255, 198, 99, 0.1);
+  }
+
+  .act-label {
+    color: var(--muted);
+  }
+
+  .accent-cyan { color: var(--cyan); }
+  .accent-green { color: var(--green); }
+  .accent-amber { color: var(--amber); }
+  .accent-pink { color: var(--pink); }
+  .accent-red { color: var(--red); }
+
+  .hl-cyan { color: var(--cyan); }
+  .hl-green { color: var(--green); }
+  .hl-orange { color: var(--amber); }
+  .hl-red { color: var(--red); }
+
+  .split,
+  .split-rev {
+    display: grid;
+    gap: 2.1rem;
+    align-items: center;
+    width: 100%;
+  }
+
+  .split {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .split-rev {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  }
+
+  .hero-sub {
+    max-width: 20ch;
+    font-size: clamp(2rem, 3.8vw, 3.2rem);
+    font-family: var(--font-head);
+    line-height: 1.05;
+    letter-spacing: -0.035em;
+    font-weight: 500;
+  }
+
+  .hero-copy {
+    max-width: 47rem;
+  }
+
+  .metric-row,
+  .chip-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: stretch;
+  }
+
+  .metric-row {
+    margin-top: 1.4rem;
+    justify-content: center;
+  }
+
+  .metric-card,
+  .proof-card,
+  .bento-card,
+  .comparison-box,
+  .story-bubble,
+  .term-mockup,
+  pre,
+  .quote-card,
+  .protocol-tile {
+    background: var(--bg-elevated);
     border: 1px solid var(--border);
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(18px);
   }
-  
-  .glass-stack {
-    display: flex; flex-direction: column; gap: 0.8rem; width: 100%;
+
+  .metric-card {
+    min-width: 11rem;
+    padding: 1.05rem 1.15rem;
+    border-radius: 1.25rem;
+    text-align: left;
   }
-  .glass-item {
-    background: rgba(255,255,255,0.03); border: 1px solid var(--border);
-    backdrop-filter: blur(12px); border-radius: 16px; padding: 1.2rem 1.8rem;
-    display: flex; justify-content: space-between; align-items: center;
-    position: relative; overflow: hidden;
-    transition: all 0.3s ease;
+
+  .metric-card strong {
+    display: block;
+    font-family: var(--font-head);
+    font-size: 1.9rem;
+    letter-spacing: -0.04em;
+    margin-bottom: 0.35rem;
   }
-  .glass-item:hover { background: rgba(255,255,255,0.06); transform: scale(1.02); }
-  .glass-item::after {
-    content: ''; position: absolute; left: 0; top: 0; width: 4px; height: 100%;
+
+  .metric-card span {
+    color: var(--muted);
+    font-size: 0.98rem;
+    line-height: 1.35;
+  }
+
+  .metric-pill,
+  .command-chip {
+    font-family: var(--font-code);
+    font-size: 0.85rem;
+    color: #dce9ff;
+  }
+
+  .metric-pill strong {
+    color: var(--text);
+    font-size: 0.95rem;
+  }
+
+  .bento-grid,
+  .proof-grid,
+  .protocol-grid {
+    display: grid;
+    width: 100%;
+    gap: 1rem;
+  }
+
+  .bento-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-top: 1.4rem;
+  }
+
+  .proof-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .protocol-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .bento-card,
+  .proof-card,
+  .protocol-tile {
+    padding: 1.3rem 1.35rem;
+    border-radius: 1.35rem;
+  }
+
+  .bento-card h3,
+  .proof-card h3,
+  .protocol-tile h3,
+  .comparison-box h3 {
+    color: var(--text);
+  }
+
+  .bento-card p,
+  .proof-card p,
+  .protocol-tile p,
+  .comparison-box p {
+    font-size: 1rem;
+    margin: 0;
+  }
+
+  .bento-card p + p,
+  .proof-card p + p,
+  .protocol-tile p + p,
+  .comparison-box p + p {
+    margin-top: 0.55rem;
+  }
+
+  .bento-card.problem { border-top: 4px solid var(--red); }
+  .bento-card.solution { border-top: 4px solid var(--cyan); }
+  .bento-card.warn { border-top: 4px solid var(--amber); }
+  .bento-card.live { border-top: 4px solid var(--green); }
+
+  .proof-card strong,
+  .protocol-tile strong {
+    color: var(--text);
+  }
+
+  .quote-card,
+  .story-bubble {
+    padding: 1.5rem 1.55rem;
+    border-radius: 1.45rem;
+  }
+
+  .story-bubble {
+    background: rgba(247, 249, 252, 0.96);
+    color: #10203b;
+    border-radius: 1.4rem 1.4rem 1.4rem 0.35rem;
+    max-width: 34rem;
+    font-size: 1.14rem;
+    line-height: 1.45;
+  }
+
+  .story-bubble b,
+  .story-bubble strong {
+    color: #071019;
+  }
+
+  .avatar {
+    width: 4.75rem;
+    height: 4.75rem;
+    border-radius: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(85, 214, 255, 0.22), rgba(123, 140, 255, 0.18));
+    border: 1px solid var(--border-strong);
+    color: var(--text);
+    font-family: var(--font-code);
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 1.2rem;
+  }
+
+  .big-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 1.5rem;
+    border-radius: 1.4rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-soft);
+    max-width: 18rem;
+  }
+
+  .big-stat strong {
+    font-family: var(--font-head);
+    font-size: 3.2rem;
+    line-height: 0.95;
+    letter-spacing: -0.06em;
+  }
+
+  .big-stat span {
+    color: var(--muted);
+    font-size: 1rem;
+    line-height: 1.35;
+  }
+
+  .glass-stack,
+  .stack-rail {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    width: 100%;
+  }
+
+  .glass-item,
+  .stack-layer {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.15rem 1.4rem;
+    border-radius: 1.15rem;
+    background: rgba(255, 255, 255, 0.045);
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .glass-item::before,
+  .stack-layer::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 4px;
     background: var(--cyan);
   }
-  .glass-item.green::after { background: var(--green); }
-  .glass-item.pink::after { background: var(--pink); }
-  .glass-item.orange::after { background: var(--orange); }
-  .glass-item.purple::after { background: var(--purple); }
-  .glass-item.yellow::after { background: var(--yellow); }
 
-  /* Story Visuals */
-  .story-bubble {
-    background: white; color: #1e293b; padding: 2rem; border-radius: 24px 24px 24px 4px;
-    font-size: 1.6rem; line-height: 1.4; box-shadow: 0 15px 40px rgba(0,0,0,0.3);
-    position: relative; margin-bottom: 2rem;
-  }
-  .avatar {
-    width: 90px; height: 90px; border-radius: 50%; background: var(--indigo);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 2.5rem; margin-bottom: 1.5rem; border: 3px solid #fff;
+  .glass-item.green::before,
+  .stack-layer.green::before { background: var(--green); }
+  .glass-item.pink::before,
+  .stack-layer.pink::before { background: var(--pink); }
+  .glass-item.orange::before,
+  .stack-layer.orange::before { background: var(--amber); }
+  .glass-item.yellow::before,
+  .stack-layer.yellow::before { background: var(--yellow); }
+  .glass-item.purple::before,
+  .stack-layer.purple::before { background: var(--indigo); }
+
+  .glass-item strong,
+  .stack-layer strong {
+    font-size: 1.05rem;
   }
 
-  /* Diagrams */
+  .glass-item span,
+  .stack-layer span {
+    color: var(--muted);
+    font-size: 0.98rem;
+    text-align: right;
+  }
+
   .diagram-container {
-    width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
-    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 20rem;
   }
+
+  .diagram-container svg {
+    width: 100%;
+    height: auto;
+    max-width: 32rem;
+  }
+
   .pulse {
-    animation: pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+    animation: pulse-ring 2.2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
   }
+
   @keyframes pulse-ring {
-    0% { transform: scale(0.8); opacity: 0.5; }
-    100% { transform: scale(1.5); opacity: 0; }
+    0% { transform: scale(0.8); opacity: 0.45; }
+    100% { transform: scale(1.45); opacity: 0; }
   }
 
-  /* Animations */
-  .reveal { opacity: 0; transform: translateY(30px); transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1); }
-  .slide.active .reveal { opacity: 1; transform: translateY(0); }
-  .slide.active .d1 { transition-delay: 0.1s; }
-  .slide.active .d2 { transition-delay: 0.2s; }
-  .slide.active .d3 { transition-delay: 0.3s; }
-  .slide.active .d4 { transition-delay: 0.4s; }
-  .slide.active .d5 { transition-delay: 0.5s; }
-
-  /* Progress Bar */
-  #progress {
-    position: fixed; bottom: 0; left: 0; height: 5px;
-    background: linear-gradient(90deg, var(--cyan), var(--purple), var(--pink));
-    transition: width 0.4s ease; z-index: 100;
+  .compact-list,
+  ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+    width: 100%;
+    margin: 1rem 0 0;
+    max-width: 42rem;
   }
 
-  /* Terminal Aesthetic */
+  .compact-list li,
+  ul li {
+    position: relative;
+    padding-left: 1.35rem;
+    color: var(--muted);
+    font-size: 1.08rem;
+    line-height: 1.42;
+  }
+
+  .compact-list li::before,
+  ul li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.52rem;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: var(--cyan);
+    box-shadow: 0 0 10px rgba(85, 214, 255, 0.65);
+  }
+
   .term-mockup {
-    background: #0f172a; border: 1px solid var(--border); border-radius: 16px;
-    overflow: hidden; box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+    overflow: hidden;
+    border-radius: 1.35rem;
   }
-  .term-bar { background: rgba(255,255,255,0.05); padding: 0.8rem; display: flex; gap: 8px; }
-  .term-dot { width: 10px; height: 10px; border-radius: 50%; }
-  .term-content { padding: 1.8rem; font-family: var(--font-code); font-size: 1.3rem; color: #94a3b8; line-height: 1.6; }
-  .term-content b { color: var(--green); }
+
+  .term-bar {
+    display: flex;
+    gap: 0.45rem;
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .term-dot {
+    width: 0.65rem;
+    height: 0.65rem;
+    border-radius: 50%;
+  }
+
+  .term-content {
+    padding: 1.35rem 1.45rem;
+    font-family: var(--font-code);
+    color: #c8d7ec;
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  .term-content .result {
+    color: var(--green);
+  }
+
+  .term-content .warn {
+    color: var(--amber);
+  }
+
+  .term-content .fail {
+    color: var(--red);
+  }
+
+  .terminal-focus .term-content {
+    font-size: 1.08rem;
+  }
 
   pre {
-    background: #0d1117; border: 1px solid #30363d; padding: 1.8rem;
-    border-radius: 16px; font-family: var(--font-code); font-size: 1.2rem;
-    color: #c9d1d9; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.4);
-    line-height: 1.5;
+    padding: 1.25rem 1.35rem;
+    border-radius: 1.25rem;
+    overflow: hidden;
+    color: #d5e0f0;
+    font-family: var(--font-code);
+    font-size: 0.98rem;
+    line-height: 1.55;
   }
-  .json-key { color: #79c0ff; }
-  .json-str { color: #a5d6ff; }
 
-  /* Comparison Boxes */
+  .json-key { color: #8bc6ff; }
+  .json-str { color: #b7dcff; }
+
   .comparison-box {
-    padding: 2rem; border-radius: 20px; border: 1px solid #30363d;
-    background: rgba(13, 17, 23, 0.7); height: 100%; display: flex; flex-direction: column;
+    padding: 1.4rem;
+    border-radius: 1.4rem;
   }
-  .comparison-box.bad { border-top: 5px solid var(--red); }
-  .comparison-box.good { border-top: 5px solid var(--green); }
-  .comparison-box.neutral { border-top: 5px solid var(--orange); }
-  .comparison-box h3 { margin-bottom: 1rem; }
 
-  /* Nerd Snipe Callout */
+  .comparison-box.good { border-top: 4px solid var(--green); }
+  .comparison-box.bad { border-top: 4px solid var(--red); }
+  .comparison-box.neutral { border-top: 4px solid var(--amber); }
+
+  .nerd-snipe,
+  .proof-note {
+    padding: 0.9rem 1rem;
+    border-radius: 0.95rem;
+    border: 1px solid rgba(85, 214, 255, 0.22);
+    background: rgba(85, 214, 255, 0.09);
+    color: #d7eeff;
+    font-family: var(--font-code);
+    font-size: 0.84rem;
+    line-height: 1.5;
+    max-width: 30rem;
+  }
+
   .nerd-snipe {
-    position: absolute; bottom: 2rem; left: 2rem;
-    background: rgba(34, 211, 238, 0.1); border: 1px solid var(--cyan);
-    padding: 1rem; border-radius: 12px; font-family: var(--font-code);
-    font-size: 0.9rem; max-width: 250px; opacity: 0.7;
+    position: absolute;
+    left: 2.4rem;
+    bottom: 1.8rem;
   }
 
-  /* Icons */
-  .icon-heart { color: var(--pink); animation: heart-beat 1.5s infinite; display: inline-block; }
-  @keyframes heart-beat {
-    0% { transform: scale(1); }
-    15% { transform: scale(1.3); }
-    30% { transform: scale(1); }
-    45% { transform: scale(1.15); }
-    60% { transform: scale(1); }
+  .protocol-grid .protocol-tile {
+    min-height: 11rem;
   }
 
+  .protocol-tile p {
+    margin-bottom: 0.7rem;
+  }
+
+  .subtle {
+    color: var(--muted);
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(1.3rem);
+    transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .slide.active .reveal {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .slide.active .d1 { transition-delay: 0.08s; }
+  .slide.active .d2 { transition-delay: 0.16s; }
+  .slide.active .d3 { transition-delay: 0.24s; }
+  .slide.active .d4 { transition-delay: 0.32s; }
+  .slide.active .d5 { transition-delay: 0.4s; }
+  .slide.active .d6 { transition-delay: 0.48s; }
+
+  @media (max-width: 1280px) {
+    .slide {
+      padding: 5rem 3rem 3.25rem;
+    }
+
+    .slide-header {
+      left: 1.4rem;
+      right: 1.4rem;
+    }
+
+    .split,
+    .split-rev,
+    .proof-grid,
+    .protocol-grid,
+    .bento-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .nerd-snipe {
+      position: static;
+      margin-top: 1rem;
+    }
+  }
+
+  @media (max-width: 900px) {
+    body {
+      overflow: auto;
+      height: auto;
+      min-height: 100vh;
+    }
+
+    #deck {
+      height: auto;
+      min-height: 100vh;
+    }
+
+    .slide {
+      position: relative;
+      opacity: 1;
+      pointer-events: auto;
+      transform: none;
+      min-height: 100vh;
+      padding: 6rem 1.25rem 3rem;
+    }
+
+    .slide:not(.active) {
+      display: none;
+    }
+
+    .slide-header {
+      top: 1rem;
+      left: 1rem;
+      right: 1rem;
+    }
+
+    #deck-meta {
+      top: auto;
+      right: 1rem;
+      bottom: 1rem;
+      left: 1rem;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+
+    .metric-row {
+      justify-content: stretch;
+    }
+
+    .metric-card {
+      min-width: unset;
+      width: 100%;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation: none !important;
+      transition: none !important;
+      scroll-behavior: auto !important;
+    }
+  }
 </style>
 </head>
 <body>
 
-<div class="grid-bg"></div>
 <div class="orb orb-1"></div>
 <div class="orb orb-2"></div>
 <div class="orb orb-3"></div>
 <div class="orb orb-4"></div>
 <div id="progress"></div>
+<div id="deck-meta">
+  <span id="meta-act">Act I - Problem</span>
+  <span id="meta-status" class="status-chip live">Live Now</span>
+  <span id="meta-slide">01 / 24</span>
+</div>
 
 <div id="deck">
 
-  <!-- SLIDE 1: HERO -->
-  <div class="slide center active">
-    <div class="tag reveal d1"><span class="dot"></span>FOSS Hack 2026 Showcase</div>
-    <h1 class="reveal d2">chaind<span style="color: var(--cyan)">.</span></h1>
-    <h2 class="reveal d3" style="font-weight: 300;">The Sovereign <span class="icon-heart">❤️</span> of Your Digital Life</h2>
-    <p class="reveal d4">A unified, local-first daemon turning the chaos of messaging into a single, beautiful API for your AI agents.</p>
-    
-    <div class="reveal d5" style="display: flex; gap: 1.5rem; margin-top: 2rem;">
-        <span class="tag cyan">Pure Go / SQLite WAL</span>
-        <span class="tag purple">Sovereign India AI Enablement</span>
+  <div class="slide center active" data-act="Act I - Problem" data-status="live">
+    <div class="slide-header reveal d1">
+      <div class="tag"><span class="dot"></span>FOSS Hack 2026 Final Demo</div>
+      <div class="header-right"><span class="status-chip live">Live Now</span></div>
+    </div>
+    <h1 class="reveal d2">chaind<span class="accent-cyan">.</span></h1>
+    <p class="hero-sub reveal d3">A local-first messaging daemon for scripts, agents, and fragmented communities.</p>
+    <p class="hero-copy reveal d4">Sync supported chats into one local store, one IPC surface, and one control plane so your automation can stop juggling platform-specific glue.</p>
+    <div class="metric-row reveal d5">
+      <div class="metric-card"><strong>Local</strong><span>SQLite WAL store on your own machine</span></div>
+      <div class="metric-card"><strong>Unified</strong><span>Read, search, send, and watch through one interface</span></div>
+      <div class="metric-card"><strong>Demoing</strong><span>Matrix and Telegram centered flows today</span></div>
     </div>
   </div>
 
-  <!-- SLIDE 2: ALICE'S STRUGGLE -->
-  <div class="slide">
-    <div class="tag reveal d1"><span class="dot"></span>The Human Struggle</div>
-    <h2 class="reveal d2">Meet <span style="color: var(--cyan)">Alice</span>.</h2>
-    <div class="split">
-        <div class="reveal d3">
-            <div class="story-bubble">
-                "I manage a FOSS community. My students are on WhatsApp, my core devs are on Matrix, and I spend 3 hours a day just copy-pasting..."
-            </div>
-            <p>Meet Alice. She's the heart of her community, but she's drowning in <b>Fragmentation Chaos</b>.</p>
-        </div>
-        <div class="reveal d4 diagram-container">
-            <svg viewBox="0 0 400 400" width="400">
-                <circle cx="200" cy="200" r="60" fill="var(--indigo)" opacity="0.2" class="pulse" />
-                <circle cx="200" cy="200" r="40" fill="var(--indigo)" />
-                <g class="nodes">
-                    <circle cx="80" cy="80" r="25" fill="var(--cyan)" />
-                    <circle cx="320" cy="80" r="25" fill="var(--green)" />
-                    <circle cx="80" cy="320" r="25" fill="var(--orange)" />
-                    <circle cx="320" cy="320" r="25" fill="var(--pink)" />
-                </g>
-                <path d="M110 110 L170 170" stroke="var(--red)" stroke-width="2" stroke-dasharray="5,5" />
-                <path d="M290 110 L230 170" stroke="var(--red)" stroke-width="2" stroke-dasharray="5,5" />
-                <path d="M110 290 L170 230" stroke="var(--red)" stroke-width="2" stroke-dasharray="5,5" />
-                <path d="M290 290 L230 230" stroke="var(--red)" stroke-width="2" stroke-dasharray="5,5" />
-            </svg>
-        </div>
+  <div class="slide" data-act="Act I - Problem">
+    <div class="slide-header reveal d1">
+      <div class="tag"><span class="dot"></span>The Human Struggle</div>
     </div>
-  </div>
-
-  <!-- SLIDE 3: THE INDIAN CONTEXT -->
-  <div class="slide">
-    <div class="tag reveal d1"><span class="dot"></span>The Indian Context</div>
-    <h2 class="reveal d2">The <span style="color: var(--orange)">Indian</span> FOSS Ecosystem.</h2>
+    <h2 class="reveal d2">Meet <span class="accent-cyan">Alice</span>.</h2>
     <div class="split">
       <div class="reveal d3">
-        <p>In India, management is a logistical nightmare.</p>
-        <p><b>FOSS United</b> manages 100+ college chapters. <b>Bodhya</b> builds regional tech knowledge. But where are the members?</p>
-        <div class="glass-stack" style="margin-top: 2rem;">
-            <div class="glass-item orange"><strong>Telegram</strong> <span>The Chatters</span></div>
-            <div class="glass-item green"><strong>WhatsApp</strong> <span>The Students</span></div>
-            <div class="glass-item"><strong>Matrix</strong> <span>The Core Devs</span></div>
+        <div class="story-bubble">"My students are on WhatsApp, my core contributors are on Matrix, and I still copy-paste every announcement by hand."</div>
+        <p>Alice is not missing a better chat app. She is missing a single local memory and control surface for the communities she already runs.</p>
+        <div class="metric-row" style="justify-content:flex-start; margin-top:1.2rem;">
+          <div class="metric-card"><strong>3h</strong><span>lost per day to repeated coordination</span></div>
+          <div class="metric-card"><strong>4 apps</strong><span>open just to reach one community</span></div>
+          <div class="metric-card"><strong>1 person</strong><span>absorbing the operational chaos</span></div>
         </div>
       </div>
-      <div class="reveal d4">
-        <div class="avatar" style="background:var(--orange)">🇮🇳</div>
-        <div class="story-bubble">
-            "Alice spends 3 hours a day copy-pasting announcements across 4 apps just to keep 500 students in the loop."
-        </div>
-        <p class="hl-red" style="font-size: 1.4rem;">Fragmentation is winning.</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- SLIDE 4: THE CHAOS -->
-  <div class="slide center">
-    <div class="tag reveal d1"><span class="dot"></span>The Nightmare</div>
-    <h2 class="reveal d2">The <span style="color: var(--red)">Chaos</span> of Fragmentation</h2>
-    <div class="reveal d3 diagram-container">
-        <svg viewBox="0 0 600 400" width="700">
-            <g class="protocols">
-                <circle cx="100" cy="100" r="40" fill="var(--cyan)" opacity="0.8" />
-                <text x="75" y="105" fill="#000" font-weight="bold">Matrix</text>
-                <circle cx="500" cy="100" r="40" fill="var(--orange)" opacity="0.8" />
-                <text x="465" y="105" fill="#000" font-weight="bold">Telegram</text>
-                <circle cx="100" cy="300" r="40" fill="var(--green)" opacity="0.8" />
-                <text x="65" y="305" fill="#000" font-weight="bold">WhatsApp</text>
-                <circle cx="500" cy="300" r="40" fill="var(--pink)" opacity="0.8" />
-                <text x="480" y="305" fill="#000" font-weight="bold">IRC</text>
-            </g>
-            <path d="M150 80 L350 100" stroke="var(--red)" stroke-width="2" stroke-dasharray="8,4" />
-            <path d="M210 240 L350 120" stroke="var(--red)" stroke-width="2" stroke-dasharray="8,4" />
-            <path d="M100 100 L150 220" stroke="var(--red)" stroke-width="2" stroke-dasharray="8,4" />
-            <circle cx="250" cy="150" r="30" fill="none" stroke="var(--red)" stroke-width="3" />
-            <text x="242" y="160" fill="var(--red)" font-size="30" font-weight="bold">?</text>
+      <div class="reveal d4 diagram-container">
+        <svg viewBox="0 0 430 420" aria-hidden="true">
+          <circle cx="215" cy="210" r="62" fill="rgba(123,140,255,0.22)" class="pulse"></circle>
+          <rect x="175" y="170" width="80" height="80" rx="22" fill="#7b8cff"></rect>
+          <text x="194" y="217" fill="#071019" font-family="IBM Plex Mono" font-size="15" font-weight="700">ALICE</text>
+          <g>
+            <rect x="26" y="48" width="112" height="64" rx="18" fill="rgba(85,214,255,0.92)"></rect>
+            <text x="48" y="88" fill="#071019" font-family="IBM Plex Mono" font-size="15" font-weight="700">MATRIX</text>
+            <rect x="290" y="46" width="118" height="64" rx="18" fill="rgba(255,198,99,0.94)"></rect>
+            <text x="314" y="86" fill="#071019" font-family="IBM Plex Mono" font-size="15" font-weight="700">TELEGRAM</text>
+            <rect x="34" y="308" width="124" height="64" rx="18" fill="rgba(94,229,154,0.94)"></rect>
+            <text x="54" y="348" fill="#071019" font-family="IBM Plex Mono" font-size="15" font-weight="700">WHATSAPP</text>
+            <rect x="294" y="308" width="106" height="64" rx="18" fill="rgba(255,127,168,0.9)"></rect>
+            <text x="332" y="348" fill="#071019" font-family="IBM Plex Mono" font-size="15" font-weight="700">IRC</text>
+          </g>
+          <g stroke="rgba(255,106,112,0.92)" stroke-width="3" stroke-dasharray="8 7">
+            <path d="M138 111 L178 171"></path>
+            <path d="M290 111 L252 171"></path>
+            <path d="M152 309 L186 247"></path>
+            <path d="M294 309 L244 247"></path>
+          </g>
         </svg>
+      </div>
     </div>
-    <p class="reveal d4 hl-red" style="margin-top: 2rem;">Alice needs a unified brain. Not another bridge.</p>
   </div>
 
-  <!-- SLIDE 5: VERCEL FALLACY -->
-  <div class="slide center">
-    <div class="tag reveal d1"><span class="dot"></span>Market Error</div>
-    <h2 class="reveal d2">Why "Cloud Bots" <span style="color: var(--pink)">Fail</span> Alice</h2>
+  <div class="slide" data-act="Act I - Problem">
+    <div class="slide-header reveal d1">
+      <div class="tag"><span class="dot"></span>The India Context</div>
+    </div>
+    <h2 class="reveal d2">Indian FOSS communities already live on multiple networks.</h2>
+    <div class="split">
+      <div class="reveal d3">
+        <p>College chapters, regional learning groups, and volunteer-led communities do not get to pick a single winning chat surface. Students stay on WhatsApp, contributors prefer Matrix or Telegram, and operators end up manually bridging everything.</p>
+        <div class="glass-stack" style="margin-top:1.3rem;">
+          <div class="glass-item orange"><strong>Telegram</strong><span>High-chatter public coordination</span></div>
+          <div class="glass-item green"><strong>WhatsApp</strong><span>Freshers, logistics, fast replies</span></div>
+          <div class="glass-item"><strong>Matrix</strong><span>Core contributors and technical discussion</span></div>
+        </div>
+      </div>
+      <div class="reveal d4" style="display:flex; flex-direction:column; gap:1rem; align-items:flex-start;">
+        <div class="avatar">IN</div>
+        <div class="big-stat"><strong>100+</strong><span>chapters and local groups can still mean fragmented operations.</span></div>
+        <div class="story-bubble">"This is not a feature request. It is volunteer time leaking out through platform fragmentation."</div>
+        <p class="hl-red">Fragmentation wins when operators have no shared context.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide center" data-act="Act I - Problem">
+    <div class="slide-header reveal d1">
+      <div class="tag"><span class="dot"></span>The Failure Mode</div>
+    </div>
+    <h2 class="reveal d2">Human bridges still leave agents <span class="accent-red">blind</span>.</h2>
+    <div class="reveal d3 diagram-container">
+      <svg viewBox="0 0 760 360" aria-hidden="true" style="max-width:46rem;">
+        <rect x="34" y="54" width="150" height="76" rx="24" fill="rgba(85,214,255,0.92)"></rect>
+        <text x="72" y="100" fill="#071019" font-family="IBM Plex Mono" font-size="18" font-weight="700">ANNOUNCEMENT</text>
+        <rect x="290" y="40" width="170" height="92" rx="24" fill="rgba(255,255,255,0.05)" stroke="rgba(255,106,112,0.95)" stroke-width="3"></rect>
+        <text x="329" y="90" fill="#ff6a70" font-family="Syne" font-size="34" font-weight="800">copy</text>
+        <rect x="536" y="36" width="184" height="72" rx="20" fill="rgba(255,198,99,0.95)"></rect>
+        <text x="575" y="82" fill="#071019" font-family="IBM Plex Mono" font-size="18" font-weight="700">TELEGRAM</text>
+        <rect x="536" y="144" width="184" height="72" rx="20" fill="rgba(94,229,154,0.95)"></rect>
+        <text x="566" y="190" fill="#071019" font-family="IBM Plex Mono" font-size="18" font-weight="700">WHATSAPP</text>
+        <rect x="536" y="252" width="184" height="72" rx="20" fill="rgba(85,214,255,0.95)"></rect>
+        <text x="596" y="298" fill="#071019" font-family="IBM Plex Mono" font-size="18" font-weight="700">MATRIX</text>
+        <path d="M184 92 L290 86" stroke="#ffffff" stroke-width="4"></path>
+        <path d="M460 80 L536 72" stroke="#ff6a70" stroke-width="4" stroke-dasharray="10 8"></path>
+        <path d="M460 92 L536 180" stroke="#ff6a70" stroke-width="4" stroke-dasharray="10 8"></path>
+        <path d="M460 104 L536 288" stroke="#ff6a70" stroke-width="4" stroke-dasharray="10 8"></path>
+        <circle cx="320" cy="238" r="62" fill="none" stroke="rgba(255,106,112,0.95)" stroke-width="5"></circle>
+        <text x="285" y="249" fill="#ff6a70" font-family="Syne" font-size="28" font-weight="800">NO SHARED</text>
+        <text x="293" y="278" fill="#ff6a70" font-family="Syne" font-size="28" font-weight="800">MEMORY</text>
+      </svg>
+    </div>
+    <p class="reveal d4 hero-copy">Announcements get copied. Moderation gets repeated. History stays siloed. A human can brute-force that workflow; an agent cannot.</p>
+  </div>
+
+  <div class="slide center" data-act="Act I - Problem">
+    <div class="slide-header reveal d1">
+      <div class="tag"><span class="dot"></span>Why Existing Bot Models Stall</div>
+    </div>
+    <h2 class="reveal d2">Webhook bots solve delivery, not <span class="accent-pink">local context</span>.</h2>
     <div class="bento-grid reveal d3">
-        <div class="bento-card" style="grid-column: span 2;">
-            <div class="icon-box"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--pink)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></div>
-            <h3 style="color: var(--pink)">Privacy Silos</h3>
-            <p style="font-size: 1.4rem;">Vercel Chat SDK requires Alice to send <b>her private messages</b> to their cloud. She loses sovereignty.</p>
-        </div>
-        <div class="bento-card">
-            <div class="icon-box"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--pink)" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></div>
-            <h3 style="color: var(--pink)">Webhook Hell</h3>
-            <p style="font-size: 1.4rem;">Needs public IPs and TLS. Impossible for Alice's local-first setup.</p>
-        </div>
-        <div class="bento-card">
-            <div class="icon-box"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--pink)" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></div>
-            <h3 style="color: var(--pink)">Bot-Restricted</h3>
-            <p style="font-size: 1.4rem;">WhatsApp "Bots" have 24h windows. They can't read DMs natively.</p>
-        </div>
-        <div class="bento-card" style="grid-column: span 2; background: rgba(34, 211, 238, 0.05); border-color: var(--cyan);">
-            <div class="icon-box" style="background: rgba(34, 211, 238, 0.1); border-color: var(--cyan);"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg></div>
-            <h3 style="color: var(--cyan)">The chaind Difference</h3>
-            <p style="font-size: 1.4rem;">We act as <b>YOU</b>. Using native protocols like MTProto and whatsmeow. No limits. No cloud. Local sovereign power.</p>
-        </div>
+      <div class="bento-card problem" style="grid-column: span 2;">
+        <h3>Cloud dependency</h3>
+        <p>Traditional bot stacks assume public ingress, hosted state, and someone else's control plane.</p>
+      </div>
+      <div class="bento-card problem">
+        <h3>Bot restrictions</h3>
+        <p>Some platforms limit history, DM access, or reply windows for bot identities.</p>
+      </div>
+      <div class="bento-card warn">
+        <h3>Context stays siloed</h3>
+        <p>An agent in one surface still cannot see the whole community conversation.</p>
+      </div>
+      <div class="bento-card solution" style="grid-column: span 2;">
+        <h3>chaind's angle</h3>
+        <p>Use local and native client flows where possible, sync into one local store, and expose one machine-first interface for scripts and agents.</p>
+      </div>
     </div>
   </div>
 
-  <!-- SLIDE 6: THE REVEAL -->
-  <div class="slide">
-    <div class="tag reveal d1"><span class="dot"></span>The Solution</div>
+  <div class="slide" data-act="Act II - System" data-status="live">
+    <div class="slide-header reveal d1">
+      <div class="tag"><span class="dot"></span>The Solution</div>
+      <div class="header-right"><span class="status-chip live">Live Now</span></div>
+    </div>
     <div class="split">
-        <div class="reveal d2 diagram-container">
-            <svg viewBox="0 0 400 400" width="450">
-                <circle cx="200" cy="200" r="120" fill="rgba(34, 211, 238, 0.1)" stroke="var(--cyan)" stroke-width="2" class="pulse" />
-                <rect x="140" y="140" width="120" height="120" rx="30" fill="var(--bg)" stroke="var(--cyan)" stroke-width="5" />
-                <path d="M170 200 L230 200 M200 170 L200 230" stroke="var(--cyan)" stroke-width="5" stroke-linecap="round" />
-                <g stroke="var(--cyan)" stroke-width="2" stroke-dasharray="10,5">
-                    <line x1="50" y1="50" x2="140" y2="140" /><line x1="350" y1="50" x2="260" y2="140" />
-                    <line x1="50" y1="350" x2="140" y2="260" /><line x1="350" y1="350" x2="260" y2="260" />
-                </g>
-            </svg>
-        </div>
-        <div class="reveal d3">
-            <h2>Alice's <span style="color: var(--green)">Superpower</span>.</h2>
-            <p><b>chaind</b> sits quietly in the background, logging into Alice's accounts as her, and turning the mess into a <b>Single Universal Stream</b>.</p>
-            <ul>
-                <li><span class="hl-cyan">Sovereign:</span> Alice's data stays on her disk.</li>
-                <li><span class="hl-cyan">Local-First:</span> No public IPs needed.</li>
-                <li><span class="hl-cyan">Agent-Native:</span> Built for scripts and AI.</li>
-            </ul>
-        </div>
-    </div>
-  </div>
-
-  <!-- SLIDE 7: ARCHITECTURE OVERVIEW -->
-  <div class="slide center">
-    <div class="tag reveal d1"><span class="dot"></span>Technical Excellence</div>
-    <h2>The 5-Layer <span style="color: var(--purple)">Brutalist</span> Stack</h2>
-    <div style="width: 850px; margin: 2rem auto 0; text-align: left;">
-        <div class="glass-stack">
-            <div class="glass-item reveal d2"><strong>5. IPC Layer</strong> <span style="color: var(--indigo)">Unix Socket · capability tokens</span></div>
-            <div class="glass-item reveal d3 pink"><strong>4. Store Writer</strong> <span style="color: var(--pink)">SQLite WAL · batch inserts</span></div>
-            <div class="glass-item reveal d4"><strong>3. Canonical Normalizer</strong> <span style="color: var(--cyan)">ULID sorting · unified schema</span></div>
-            <div class="glass-item reveal d5 green"><strong>2. Protocol Adapters</strong> <span style="color: var(--green)">MTProto · whatsmeow · matrix</span></div>
-            <div class="glass-item reveal d6 orange"><strong>1. chaind Daemon</strong> <span style="color: var(--orange)">isolated supervisors</span></div>
-        </div>
-    </div>
-  </div>
-
-  <!-- SLIDE 8: RELIABILITY -->
-  <div class="slide">
-    <div class="tag reveal d1"><span class="dot"></span>Layer 1: Reliability</div>
-    <h2 class="reveal d2">Isolated <span style="color: var(--orange)">Supervisors</span>.</h2>
-    <div class="split">
-        <div class="reveal d3">
-            <p>Most Go daemons use a single <code>errgroup</code>. If one adapter fails, the whole process dies.</p>
-            <p><b>chaind</b> uses isolated supervisor loops with exponential backoff. If Telegram MTProto hits a FLOOD_WAIT, it waits alone. Matrix and WhatsApp keep firing.</p>
-            <p class="hl-orange">Reliability through isolation.</p>
-        </div>
-        <div class="reveal d4 diagram-container">
-            <svg viewBox="0 0 400 300" width="400">
-                <rect x="50" y="50" width="80" height="80" rx="10" fill="var(--green)" opacity="0.8" />
-                <rect x="150" y="50" width="80" height="80" rx="10" fill="var(--red)" opacity="0.8" />
-                <path d="M190 90 L190 110 A20 20 0 0 1 170 130" stroke="#fff" fill="none" stroke-width="2" />
-                <text x="160" y="150" fill="var(--red)" font-size="12">Backoff...</text>
-                <rect x="250" y="50" width="80" height="80" rx="10" fill="var(--green)" opacity="0.8" />
-                <rect x="50" y="150" width="280" height="100" rx="10" fill="rgba(34, 211, 238, 0.1)" stroke="var(--cyan)" />
-                <text x="140" y="200" fill="var(--cyan)">Daemon Core (ALIVE)</text>
-            </svg>
-        </div>
-    </div>
-    <div class="nerd-snipe reveal d5">Nerd Snipe: Supervisor loop is only 15 lines of Go. Zero dependencies.</div>
-  </div>
-
-  <!-- SLIDE 9: ADAPTERS -->
-  <div class="slide">
-    <div class="tag reveal d1"><span class="dot"></span>Layer 2: Native Protocol</div>
-    <h2 class="reveal d2">Account <span style="color: var(--cyan)">Adapters</span></h2>
-    <div class="split">
+      <div class="reveal d2 diagram-container">
+        <svg viewBox="0 0 430 430" aria-hidden="true">
+          <circle cx="215" cy="215" r="130" fill="rgba(85,214,255,0.1)" stroke="rgba(85,214,255,0.85)" stroke-width="3" class="pulse"></circle>
+          <rect x="154" y="154" width="122" height="122" rx="28" fill="#071019" stroke="rgba(85,214,255,0.9)" stroke-width="5"></rect>
+          <text x="176" y="214" fill="#55d6ff" font-family="Syne" font-size="38" font-weight="800">chaind</text>
+          <text x="168" y="245" fill="#9fb0c5" font-family="IBM Plex Mono" font-size="14">local stream</text>
+          <g stroke="rgba(85,214,255,0.88)" stroke-width="3" stroke-dasharray="10 8">
+            <path d="M70 76 L154 154"></path>
+            <path d="M358 76 L276 154"></path>
+            <path d="M70 356 L154 276"></path>
+            <path d="M358 356 L276 276"></path>
+          </g>
+          <rect x="20" y="28" width="92" height="48" rx="16" fill="rgba(85,214,255,0.9)"></rect>
+          <text x="37" y="58" fill="#071019" font-family="IBM Plex Mono" font-size="15" font-weight="700">MATRIX</text>
+          <rect x="318" y="28" width="94" height="48" rx="16" fill="rgba(255,198,99,0.95)"></rect>
+          <text x="333" y="58" fill="#071019" font-family="IBM Plex Mono" font-size="15" font-weight="700">TELEGRAM</text>
+          <rect x="20" y="354" width="110" height="48" rx="16" fill="rgba(94,229,154,0.95)"></rect>
+          <text x="37" y="384" fill="#071019" font-family="IBM Plex Mono" font-size="15" font-weight="700">WHATSAPP</text>
+          <rect x="292" y="354" width="120" height="48" rx="16" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.18)"></rect>
+          <text x="317" y="384" fill="#f5f7fb" font-family="IBM Plex Mono" font-size="15" font-weight="700">AGENTS</text>
+        </svg>
+      </div>
       <div class="reveal d3">
-        <p>We bypass Bot APIs entirely. We use the protocols humans use.</p>
-        <ul>
-          <li><b style="color:var(--orange)">Telegram:</b> Full <b>MTProto</b> via <code>gotd/td</code>. We handle DC migrations natively.</li>
-          <li><b style="color:var(--green)">WhatsApp:</b> Reverse-engineered <b>whatsmeow</b>. We act as a linked device.</li>
-          <li><b style="color:var(--cyan)">Matrix:</b> Production-grade <b>mautrix-go</b>.</li>
+        <h2>From fragmented inboxes to one <span class="accent-green">local stream</span>.</h2>
+        <p><strong>chaind</strong> syncs supported chats into a normalized local store, then exposes that store through a machine-first IPC interface for scripts, agents, and human operators.</p>
+        <ul class="compact-list">
+          <li><span class="hl-cyan">Local-first:</span> no public webhook surface required for the default deployment.</li>
+          <li><span class="hl-cyan">Machine-first:</span> one schema instead of one parser per platform.</li>
+          <li><span class="hl-cyan">Operator-first:</span> communities get one local control plane instead of repeated manual coordination.</li>
         </ul>
-      </div>
-      <div class="reveal d4">
-        <div class="comparison-box good">
-            <h3 style="color:var(--green)">Why MTProto?</h3>
-            <p style="font-size: 1.3rem;">Bot API can't read user DMs. MTProto can. <b>chaind</b> gives your agent the same access you have on your phone.</p>
+        <div class="chip-row" style="margin-top:1.2rem;">
+          <span class="metric-pill"><strong>store</strong> SQLite WAL</span>
+          <span class="metric-pill"><strong>IPC</strong> unix socket first</span>
+          <span class="metric-pill"><strong>flows</strong> read / watch / send / search</span>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- SLIDE 10: NORMALIZATION -->
-  <div class="slide">
-    <div class="tag reveal d1"><span class="dot"></span>Layer 3: Normalization</div>
-    <h2 class="reveal d2">Universal <span style="color: var(--cyan)">Language</span></h2>
+  <div class="slide center" data-act="Act II - System" data-status="live">
+    <div class="slide-header reveal d1">
+      <div class="tag"><span class="dot"></span>Architecture Overview</div>
+      <div class="header-right"><span class="status-chip live">Live Now</span></div>
+    </div>
+    <h2 class="reveal d2">A 5-layer <span class="accent-cyan">local stack</span>.</h2>
+    <div style="width:min(54rem, 100%); margin:1.2rem auto 0; text-align:left;" class="reveal d3">
+      <div class="stack-rail">
+        <div class="stack-layer purple"><strong>5. IPC layer</strong><span>unix socket first - token-aware request handling</span></div>
+        <div class="stack-layer pink"><strong>4. Store writer</strong><span>SQLite WAL - batched single-writer path</span></div>
+        <div class="stack-layer"><strong>3. Canonical normalizer</strong><span>one message schema - ULID-based identity</span></div>
+        <div class="stack-layer green"><strong>2. Protocol adapters</strong><span>Matrix - Telegram - WhatsApp</span></div>
+        <div class="stack-layer orange"><strong>1. Daemon core</strong><span>isolated supervisors - local lifecycle</span></div>
+      </div>
+    </div>
+    <p class="proof-note reveal d4" style="margin-top:1rem;">This is the backbone for the rest of the talk: adapters bring in events, the daemon normalizes them, one writer persists them, and IPC exposes them to automation.</p>
+  </div>
+
+  <div class="slide" data-act="Act II - System" data-status="live">
+    <div class="slide-header reveal d1">
+      <div class="tag"><span class="dot"></span>Layer 1 - Reliability</div>
+      <div class="header-right"><span class="status-chip live">Live Now</span></div>
+    </div>
+    <h2 class="reveal d2">Failure stays <span class="accent-amber">contained</span>.</h2>
     <div class="split">
       <div class="reveal d3">
-        <p>An agent shouldn't have to know what a "Matrix Event" or a "Telegram Update" looks like.</p>
-        <p>We normalize everything into a <b>Canonical JSON Schema</b>.</p>
-        <p><b style="color:var(--green)">ULIDs:</b> We use time-sortable IDs. Database pagination is <code>O(log n)</code> without secondary indexes.</p>
+        <p>Instead of one shared failure path, adapters run under isolated restart loops with capped exponential backoff.</p>
+        <ul class="compact-list">
+          <li>One adapter can fail without immediately tearing down the rest of the daemon.</li>
+          <li>Backoff is localized to the failing platform.</li>
+          <li>The core process remains up while the adapter recovers.</li>
+        </ul>
+        <p class="hl-orange" style="margin-top:1rem;">Reliability comes from isolation, not luck.</p>
+      </div>
+      <div class="reveal d4 diagram-container">
+        <svg viewBox="0 0 420 300" aria-hidden="true">
+          <rect x="28" y="40" width="92" height="84" rx="16" fill="rgba(94,229,154,0.88)"></rect>
+          <text x="49" y="87" fill="#071019" font-family="IBM Plex Mono" font-size="15" font-weight="700">MATRIX</text>
+          <rect x="164" y="40" width="92" height="84" rx="16" fill="rgba(255,106,112,0.88)"></rect>
+          <text x="177" y="87" fill="#071019" font-family="IBM Plex Mono" font-size="15" font-weight="700">TG FAIL</text>
+          <rect x="300" y="40" width="92" height="84" rx="16" fill="rgba(94,229,154,0.88)"></rect>
+          <text x="316" y="87" fill="#071019" font-family="IBM Plex Mono" font-size="15" font-weight="700">WA OK</text>
+          <path d="M210 124 L210 142 A22 22 0 0 1 188 164" fill="none" stroke="#ffffff" stroke-width="3"></path>
+          <text x="168" y="184" fill="#ff6a70" font-family="IBM Plex Mono" font-size="13" font-weight="700">backoff + retry</text>
+          <rect x="44" y="192" width="332" height="76" rx="18" fill="rgba(85,214,255,0.1)" stroke="rgba(85,214,255,0.88)" stroke-width="2.5"></rect>
+          <text x="140" y="237" fill="#55d6ff" font-family="Syne" font-size="30" font-weight="800">daemon core stays up</text>
+        </svg>
+      </div>
+    </div>
+    <div class="nerd-snipe reveal d5">The supervisor loop in the repo is intentionally small: enough structure to restart adapters, not enough magic to hide failure behavior.</div>
+  </div>
+
+  <div class="slide" data-act="Act II - System" data-status="prototype">
+    <div class="slide-header reveal d1">
+      <div class="tag"><span class="dot"></span>Layer 2 - Adapters</div>
+      <div class="header-right"><span class="status-chip prototype">Prototype</span></div>
+    </div>
+    <h2 class="reveal d2">Native and local client flows, with <span class="accent-cyan">honest maturity levels</span>.</h2>
+    <div class="protocol-grid reveal d3">
+      <div class="protocol-tile">
+        <h3 class="accent-cyan">Matrix</h3>
+        <p>User-token access via <code>mautrix-go</code> is the strongest current adapter path.</p>
+        <span class="metric-pill"><strong>today</strong> read / watch / send</span>
+      </div>
+      <div class="protocol-tile">
+        <h3 class="accent-amber">Telegram</h3>
+        <p>MTProto client code is present, but auth and runtime behavior are still maturing.</p>
+        <span class="metric-pill"><strong>focus</strong> stability and auth polish</span>
+      </div>
+      <div class="protocol-tile">
+        <h3 class="accent-green">WhatsApp</h3>
+        <p>Linked-device support via <code>whatsmeow</code> is in the tree, with deeper reply and moderation work still ahead.</p>
+        <span class="metric-pill"><strong>partial</strong> send / watch paths</span>
+      </div>
+    </div>
+    <div class="split" style="margin-top:1.2rem;">
+      <div class="reveal d4">
+        <p>The point is not to pretend every platform is equally finished. The point is to normalize supported flows behind one daemon and keep improving adapters independently.</p>
+      </div>
+      <div class="reveal d5">
+        <div class="comparison-box good">
+          <h3>Why this still matters</h3>
+          <p>Even partial native/local adapters are more useful for sovereign automation than shipping another cloud-only bot wrapper.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide" data-act="Act II - System" data-status="live">
+    <div class="slide-header reveal d1">
+      <div class="tag"><span class="dot"></span>Layer 3 - Normalization</div>
+      <div class="header-right"><span class="status-chip live">Live Now</span></div>
+    </div>
+    <h2 class="reveal d2">Agents need one <span class="accent-cyan">message language</span>.</h2>
+    <div class="split">
+      <div class="reveal d3">
+        <p>A local agent should not care whether the input started life as a Matrix event or a Telegram update. It should receive one predictable message shape.</p>
+        <div class="proof-grid" style="margin-top:1rem;">
+          <div class="proof-card"><h3>Raw world</h3><p><strong>Matrix:</strong> event payloads, room IDs, relations</p><p><strong>Telegram:</strong> updates, peers, message IDs</p></div>
+          <div class="proof-card"><h3>chaind world</h3><p><strong>One schema:</strong> room, author, content, timestamps, reply links</p><p><strong>One identity model:</strong> ULID-based local IDs</p></div>
+        </div>
+        <p style="margin-top:1rem;"><span class="hl-green">ULIDs</span> keep messages time-sortable and make the local store friendlier for pagination and history traversal.</p>
       </div>
       <div class="reveal d4">
 <pre><code>{
-  <span class="json-key">"id"</span>: <span class="json-str">"01HV2X8K..."</span>, <span style="color:#8b949e">// ULID</span>
+  <span class="json-key">"id"</span>: <span class="json-str">"01HV2X8K..."</span>,
   <span class="json-key">"platform"</span>: <span class="json-str">"telegram"</span>,
+  <span class="json-key">"room"</span>: { <span class="json-key">"id"</span>: <span class="json-str">"telegram:-100123"</span> },
+  <span class="json-key">"author"</span>: { <span class="json-key">"id"</span>: <span class="json-str">"123456"</span> },
   <span class="json-key">"content"</span>: {
     <span class="json-key">"type"</span>: <span class="json-str">"text"</span>,
     <span class="json-key">"text"</span>: <span class="json-str">"Hello FOSS Hack!"</span>
@@ -474,267 +1147,325 @@
     </div>
   </div>
 
-  <!-- SLIDE 11: SQLITE -->
-  <div class="slide">
-    <div class="tag reveal d1"><span class="dot"></span>Layer 4: Storage</div>
-    <h2 class="reveal d2">The <span style="color: var(--green)">Sovereign Store</span></h2>
+  <div class="slide" data-act="Act II - System" data-status="live">
+    <div class="slide-header reveal d1">
+      <div class="tag"><span class="dot"></span>Layer 4 - Storage</div>
+      <div class="header-right"><span class="status-chip live">Live Now</span></div>
+    </div>
+    <h2 class="reveal d2">A sovereign store with a <span class="accent-green">single writer</span>.</h2>
     <div class="split-rev">
-      <div class="reveal d3 term-mockup">
-        <div class="term-bar"><div class="term-dot" style="background: #ff5f56;"></div><div class="term-dot" style="background: #ffbd2e;"></div><div class="term-dot" style="background: #27c93f;"></div></div>
+      <div class="reveal d3 term-mockup terminal-focus">
+        <div class="term-bar"><div class="term-dot" style="background:#ff5f56;"></div><div class="term-dot" style="background:#ffbd2e;"></div><div class="term-dot" style="background:#27c93f;"></div></div>
         <div class="term-content">
-            <span style="color:#8b949e">// SQLite WAL Mode</span><br>
-            PRAGMA journal_mode=WAL;<br>
-            <span style="color:#8b949e">// One writer, many readers</span><br>
-            SetMaxOpenConns(1);<br><br>
-            <span class="hl-green">GOAL:</span> 100% data integrity under load.
+          <span class="subtle">// WAL for concurrent reads</span><br>
+          PRAGMA journal_mode=WAL;<br><br>
+          <span class="subtle">// dedicated writer path</span><br>
+          SetMaxOpenConns(1);<br>
+          buffered channel - batch flush<br><br>
+          <span class="result">goal: predictable local sync behavior</span>
         </div>
       </div>
       <div class="reveal d4">
-        <p>Alice's messages live in a local SQLite DB powered by <code>modernc.org/sqlite</code> (Pure Go).</p>
-        <p><b>The Solution:</b> A single <b>StoreWriter Goroutine</b> handles all writes via a buffered channel to prevent <code>SQLITE_BUSY</code> errors.</p>
-        <p class="hl-cyan">Zero lag. Zero database locks.</p>
+        <p>Messages land in a local SQLite database with WAL enabled. The daemon separates a read pool from a dedicated write path and batches inserts through a store writer.</p>
+        <ul class="compact-list">
+          <li>One writer path lowers contention on the local store.</li>
+          <li>FTS5 sits on top for local search.</li>
+          <li>The architecture favors correctness and predictable local behavior over hype benchmarks.</li>
+        </ul>
+        <div class="chip-row" style="margin-top:1.1rem;">
+          <span class="metric-pill"><strong>reads</strong> pooled</span>
+          <span class="metric-pill"><strong>writes</strong> serialized</span>
+          <span class="metric-pill"><strong>search</strong> FTS5</span>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- SLIDE 12: IPC -->
-  <div class="slide">
-    <div class="tag reveal d1"><span class="dot"></span>Layer 5: IPC</div>
-    <h2 class="reveal d2">The <span style="color: var(--indigo)">Nervous System</span></h2>
+  <div class="slide" data-act="Act II - System" data-status="live">
+    <div class="slide-header reveal d1">
+      <div class="tag"><span class="dot"></span>Layer 5 - IPC</div>
+      <div class="header-right"><span class="status-chip live">Live Now</span></div>
+    </div>
+    <h2 class="reveal d2">The local <span class="accent-cyan">nervous system</span>.</h2>
     <div class="split">
-        <div class="reveal d3">
-            <p><b>Unix Socket (0600):</b> The sovereign choice. No network ingress. Only processes on Alice's machine can talk to <b>chaind</b>.</p>
-            <p><b>JSON Envelope:</b> Any language can talk to it. Python, Node, Go, or a simple <code>socat</code> command.</p>
+      <div class="reveal d3">
+        <p><strong>Default path:</strong> a <code>0600</code> unix socket under <code>~/.config/chaind/chaind.sock</code>. That keeps the primary interface local to the machine running the daemon.</p>
+        <p><strong>Machine-first envelope:</strong> JSON over a local IPC surface means Go, Python, Node, shell tools, and local agents can all talk to the same daemon.</p>
+        <p class="proof-note" style="margin-top:1rem;">There is also an optional local HTTP mirror for some deployments, but the default framing is still local-first IPC.</p>
+      </div>
+      <div class="reveal d4 term-mockup terminal-focus">
+        <div class="term-bar"><div class="term-dot" style="background:#ff5f56;"></div><div class="term-dot" style="background:#ffbd2e;"></div><div class="term-dot" style="background:#27c93f;"></div></div>
+        <div class="term-content">
+          $ echo '{"cmd":"read"}' | nc -U ~/.config/chaind/chaind.sock<br><br>
+          <span class="result">[recv] recent normalized messages...</span><br>
+          <span class="subtle">json in - json out</span>
         </div>
-        <div class="reveal d4 term-mockup">
-            <div class="term-bar"><div class="term-dot" style="background: #ff5f56;"></div><div class="term-dot" style="background: #ffbd2e;"></div><div class="term-dot" style="background: #27c93f;"></div></div>
-            <div class="term-content">
-                $ echo '{"cmd":"read"}' | nc -U /tmp/chaind.sock<br><br>
-                <span style="color: var(--cyan);">[RECV] 50 messages...</span>
-            </div>
-        </div>
+      </div>
     </div>
   </div>
 
-  <!-- SLIDE 13: CAPABILITY TOKENS -->
-  <div class="slide">
-    <div class="tag reveal d1"><span class="dot"></span>Security: Tokens</div>
-    <h2 class="reveal d2">Granular <span style="color: var(--purple)">Permissions</span>.</h2>
+  <div class="slide" data-act="Act II - System" data-status="prototype">
+    <div class="slide-header reveal d1">
+      <div class="tag"><span class="dot"></span>Security - Permissions</div>
+      <div class="header-right"><span class="status-chip prototype">Prototype</span></div>
+    </div>
+    <h2 class="reveal d2">Room-scoped <span class="accent-cyan">permission model</span>.</h2>
     <div class="split-rev">
-        <div class="reveal d3">
-            <div class="glass-stack">
-                <div class="glass-item purple"><strong>Tier 0: Owner</strong> <span>Full access (CLI)</span></div>
-                <div class="glass-item pink"><strong>Tier 2: ReadWrite</strong> <span>Send & Read</span></div>
-                <div class="glass-item yellow"><strong>Tier 4: SendOnly</strong> <span>Announcements</span></div>
-            </div>
+      <div class="reveal d3">
+        <div class="glass-stack">
+          <div class="glass-item purple"><strong>Tier 0 - Owner</strong><span>full access for the operator path</span></div>
+          <div class="glass-item pink"><strong>Tier 2 - ReadWrite</strong><span>read and send inside allowed rooms</span></div>
+          <div class="glass-item yellow"><strong>Tier 4 - SendOnly</strong><span>announcements without history access</span></div>
         </div>
-        <div class="reveal d4">
-            <p>We don't give agents the keys to the castle. We issue <b>Capability Tokens</b> scoped to specific rooms and tiers.</p>
-            <p>Alice's helpdesk agent can only read the <code>#helpdesk</code> room. It can't see her DMs.</p>
-        </div>
+      </div>
+      <div class="reveal d4">
+        <p>The middleware is designed around token metadata, room allowlists, and tiered access. That architectural direction is already visible in the daemon.</p>
+        <p>What is still maturing is the end-to-end provisioning story from CLI issuance to polished operator workflow.</p>
+        <div class="proof-note" style="margin-top:1rem;">So this slide is deliberately framed as a model and current direction, not as a finished product surface.</div>
+      </div>
     </div>
   </div>
 
-  <!-- SLIDE 14: PII SCRUBBING -->
-  <div class="slide">
-    <div class="tag reveal d1"><span class="dot"></span>Security: Privacy</div>
-    <h2 class="reveal d2">Local <span style="color: var(--pink)">PII Scrubbing</span>.</h2>
+  <div class="slide" data-act="Act II - System" data-status="prototype">
+    <div class="slide-header reveal d1">
+      <div class="tag"><span class="dot"></span>Security - Privacy</div>
+      <div class="header-right"><span class="status-chip prototype">Prototype</span></div>
+    </div>
+    <h2 class="reveal d2">Best-effort <span class="accent-pink">local redaction</span>.</h2>
     <div class="split">
-        <div class="reveal d3">
-            <p>Privacy is a first-class citizen. <b>chaind</b> scrubs sensitive data at the IPC layer.</p>
-            <ul>
-                <li><span style="color: var(--green)">+91 Phone Numbers</span></li>
-                <li><span style="color: var(--green)">Aadhaar Numbers</span></li>
-                <li><span style="color: var(--green)">Email Addresses</span></li>
-            </ul>
-            <p>Alice's local AI sees the message context but <b>not the user's phone number</b>.</p>
-        </div>
-        <div class="reveal d4">
+      <div class="reveal d3">
+        <p><strong>chaind</strong> includes local redaction hooks for common patterns such as phone numbers, email addresses, and PAN-like strings before data reaches a downstream consumer.</p>
+        <ul class="compact-list">
+          <li>Useful for reducing accidental PII exposure in local agent pipelines.</li>
+          <li>Helpful as a guardrail, not as a hard security boundary.</li>
+          <li>Hard guarantees still belong to operator policy and local deployment choices.</li>
+        </ul>
+      </div>
+      <div class="reveal d4">
 <pre><code>{
-  "text": "Call me at <span class="hl-red">[SCRUBBED]</span>",
-  "meta": { "pii_detected": <span style="color:#79c0ff">true</span> }
+  <span class="json-key">"text"</span>: <span class="json-str">"Call me at [REDACTED_PHONE]"</span>,
+  <span class="json-key">"meta"</span>: {
+    <span class="json-key">"pii_detected"</span>: <span class="json-str">"best_effort"</span>
+  }
 }</code></pre>
-        </div>
+        <p class="proof-note" style="margin-top:1rem;">The right claim here is practical local redaction, not magical privacy.</p>
+      </div>
     </div>
   </div>
 
-  <!-- SLIDE 15: USE CASE 1 - ASSISTANT -->
-  <div class="slide">
-    <div class="tag reveal d1"><span class="dot"></span>Use Case #1</div>
-    <h2 class="reveal d2">The <span style="color: var(--green)">Omni-Assistant</span>.</h2>
+  <div class="slide" data-act="Act III - Proof" data-status="live">
+    <div class="slide-header reveal d1">
+      <div class="tag"><span class="dot"></span>Use Case 1</div>
+      <div class="header-right"><span class="status-chip live">Live Now</span></div>
+    </div>
+    <h2 class="reveal d2">A daily digest from one <span class="accent-green">local read path</span>.</h2>
     <div class="split">
       <div class="reveal d3">
-        <div class="avatar" style="background:var(--green)">🧔</div>
-        <div class="story-bubble">
-            "I want my daily summary from Matrix and WhatsApp."
-        </div>
-        <p>With <b>chaind</b>, a simple script queries 3 networks and pipes to a local <b>Ollama</b> model.</p>
+        <div class="avatar">AI</div>
+        <div class="story-bubble">"Give me a quick summary of what happened across my support chats in the last day."</div>
+        <p>This is where unification matters. Instead of scripting each platform separately, one local read path can feed a local model or summarizer.</p>
       </div>
-      <div class="reveal d4">
-        <pre><code>chaind read --all --since 24h \
-  | ollama run summary-bot</code></pre>
+      <div class="reveal d4 term-mockup terminal-focus">
+        <div class="term-bar"><div class="term-dot" style="background:#ff5f56;"></div><div class="term-dot" style="background:#ffbd2e;"></div><div class="term-dot" style="background:#27c93f;"></div></div>
+        <div class="term-content">
+          $ chaind read --all --since 24h | ollama run summary-bot<br><br>
+          <span class="result">- 3 unanswered helpdesk threads</span><br>
+          <span class="result">- 1 release reminder in Telegram</span><br>
+          <span class="result">- 2 logistics questions still open</span>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- SLIDE 16: USE CASE 2 - GUARD -->
-  <div class="slide">
-    <div class="tag reveal d1"><span class="dot"></span>Use Case #2</div>
-    <h2 class="reveal d2">The <span style="color: var(--orange)">Community Guard</span>.</h2>
+  <div class="slide" data-act="Act III - Proof" data-status="prototype">
+    <div class="slide-header reveal d1">
+      <div class="tag"><span class="dot"></span>Use Case 2</div>
+      <div class="header-right"><span class="status-chip prototype">Prototype</span></div>
+    </div>
+    <h2 class="reveal d2">A single moderation <span class="accent-amber">control plane</span>.</h2>
     <div class="split-rev">
-      <div class="reveal d3 term-mockup">
-        <div class="term-bar"><div class="term-dot" style="background: #ff5f56;"></div><div class="term-dot" style="background: #ffbd2e;"></div><div class="term-dot" style="background: #27c93f;"></div></div>
+      <div class="reveal d3 term-mockup terminal-focus">
+        <div class="term-bar"><div class="term-dot" style="background:#ff5f56;"></div><div class="term-dot" style="background:#ffbd2e;"></div><div class="term-dot" style="background:#27c93f;"></div></div>
         <div class="term-content">
-            <span class="hl-red">ALERT:</span> Spam detected.<br>
-            <span class="hl-cyan">ACTION:</span> chaind moderate --user @bot \<br>
-            &nbsp;&nbsp;--platforms matrix,telegram<br>
-            <span class="hl-green">SUCCESS:</span> Obliterated.
+          <span class="warn">ALERT:</span> repeated spam signature detected<br>
+          <span class="subtle">operator path:</span><br>
+          $ chaind moderate --platform matrix --room !helpdesk --user @spam --reason "spam"<br><br>
+          <span class="result">local control plane response received</span>
         </div>
       </div>
       <div class="reveal d4">
-        <p>Detect a spammer once. Ban them <b>everywhere</b> instantly.</p>
-        <p class="hl-orange" style="font-size: 1.8rem;">Total time: <b>< 2 seconds.</b></p>
+        <p>The daemon already gives us one place to issue moderation intent. Cross-platform fan-out and identical capability on every adapter are still early.</p>
+        <p class="hl-orange">That is still useful: one mental model, one CLI surface, one local audit path.</p>
       </div>
     </div>
   </div>
 
-  <!-- SLIDE 17: USE CASE 3 - BODHYA -->
-  <div class="slide">
-    <div class="tag reveal d1"><span class="dot"></span>Use Case #3</div>
-    <h2 class="reveal d2">Bridging <span style="color: var(--yellow)">Languages</span>.</h2>
+  <div class="slide" data-act="Act III - Proof" data-status="next">
+    <div class="slide-header reveal d1">
+      <div class="tag"><span class="dot"></span>Use Case 3</div>
+      <div class="header-right"><span class="status-chip next">Next</span></div>
+    </div>
+    <h2 class="reveal d2">Regional language workflows on top of one <span class="accent-amber">chat layer</span>.</h2>
     <div class="split">
       <div class="reveal d3">
-        <div class="avatar" style="background:var(--yellow)">🇮🇳</div>
-        <div class="story-bubble">
-            "Support students in <b>Hindi, Tamil, and Marathi</b> natively on WhatsApp."
-        </div>
-        <p>A Bodhya agent translates queries and replies in regional languages instantly via chaind's WhatsApp bridge.</p>
+        <div class="avatar">ML</div>
+        <div class="story-bubble">"Support students in Hindi, Tamil, Marathi, or English without building a separate bridge for each chat surface."</div>
+        <p>The important idea is not only translation. It is that a single local daemon can become the stable transport layer for multilingual community tooling.</p>
       </div>
-      <div class="reveal d4">
-        <pre><code>chaind watch --room students \
-  | python3 bodhya_llm.py \
-  | chaind reply --text "नमस्ते"</code></pre>
-      </div>
-    </div>
-  </div>
-
-  <!-- SLIDE 18: EVERYTHING IS A PIPE -->
-  <div class="slide">
-    <div class="tag reveal d1"><span class="dot"></span>Developer UX</div>
-    <h2 class="reveal d2">Everything is a <span style="color: var(--cyan)">Pipe</span>.</h2>
-    <div class="split">
-        <div class="reveal d3">
-            <p><b>chaind stream</b> allows you to pipe anything directly into a chat room as a live code block.</p>
-            <p>Monitor build logs, server health, or long-running tests directly from Matrix or Telegram.</p>
-        </div>
-        <div class="reveal d4 term-mockup">
-            <div class="term-bar"><div class="term-dot" style="background: #ff5f56;"></div><div class="term-dot" style="background: #ffbd2e;"></div><div class="term-dot" style="background: #27c93f;"></div></div>
-            <div class="term-content">
-                $ make build 2>&1 | \<br>
-                &nbsp;&nbsp;<b>chaind stream --room dev</b><br><br>
-                <span style="color:var(--yellow)">[Matrix] Build started...</span><br>
-                <span style="color:var(--green)">[Matrix] Success in 42s.</span>
-            </div>
-        </div>
-    </div>
-  </div>
-
-  <!-- SLIDE 19: THE TIME MACHINE -->
-  <div class="slide center">
-    <div class="tag reveal d1"><span class="dot"></span>FTS5 Mastery</div>
-    <h2 class="reveal d2">The <span style="color: var(--pink)">Time Machine</span> Search</h2>
-    <p class="reveal d3">Search 3 years of history across Matrix, TG, and WhatsApp in <b>milliseconds</b>.</p>
-    <div class="reveal d4 term-mockup" style="width: 800px; margin-top: 2rem;">
+      <div class="reveal d4 term-mockup terminal-focus">
+        <div class="term-bar"><div class="term-dot" style="background:#ff5f56;"></div><div class="term-dot" style="background:#ffbd2e;"></div><div class="term-dot" style="background:#27c93f;"></div></div>
         <div class="term-content">
-            $ chaind search "github.com/fosscu" --since 365d<br><br>
-            <b>[WhatsApp]</b> Found 12 matches.<br>
-            <b>[Matrix]</b> Found 45 matches.<br>
-            <span class="hl-green">Time taken: 8ms.</span>
+          $ chaind watch --platform whatsapp --room students \<br>
+          &nbsp;&nbsp;| python3 bodhya_llm.py \<br>
+          &nbsp;&nbsp;| xargs -I{} chaind send --platform whatsapp --room students --text "{}"<br><br>
+          <span class="warn">workflow direction: strong</span>
         </div>
+      </div>
     </div>
-    <p class="reveal d5" style="margin-top: 2rem;">Powered by SQLite's FTS5 virtual table and ULID clustering.</p>
   </div>
 
-  <!-- SLIDE 20: UNIX PHILOSOPHY -->
-  <div class="slide center">
-    <div class="tag reveal d1"><span class="dot"></span>Philosophy</div>
-    <h2 class="reveal d2">The <span style="color: var(--cyan)">Unix Way</span> of Messaging</h2>
-    <div class="reveal d3 diagram-container">
-        <svg viewBox="0 0 600 200" width="800">
-            <rect x="50" y="70" width="120" height="60" rx="10" fill="var(--cyan)" opacity="0.8" />
-            <text x="75" y="105" fill="#000" font-weight="bold">chaind watch</text>
-            <path d="M170 100 L230 100" stroke="#fff" stroke-width="3" />
-            <rect x="240" y="70" width="120" height="60" rx="10" fill="var(--pink)" opacity="0.8" />
-            <text x="285" y="105" fill="#000" font-weight="bold">grep</text>
-            <path d="M360 100 L420 100" stroke="#fff" stroke-width="3" />
-            <rect x="430" y="70" width="120" height="60" rx="10" fill="var(--green)" opacity="0.8" />
-            <text x="450" y="105" fill="#000" font-weight="bold">chaind send</text>
-        </svg>
+  <div class="slide" data-act="Act III - Proof" data-status="next">
+    <div class="slide-header reveal d1">
+      <div class="tag"><span class="dot"></span>Developer UX</div>
+      <div class="header-right"><span class="status-chip next">Next</span></div>
     </div>
-    <p class="reveal d4">Build powerful bots using tools you already know. No framework required.</p>
-  </div>
-
-  <!-- SLIDE 21: SELF-HEALING (DOCTOR) -->
-  <div class="slide">
-    <div class="tag reveal d1"><span class="dot"></span>Operations</div>
-    <h2 class="reveal d2">Production <span style="color: var(--green)">Rigour</span>.</h2>
+    <h2 class="reveal d2">Everything is already close to a <span class="accent-cyan">pipe</span>.</h2>
     <div class="split">
-        <div class="reveal d3">
-            <p><b>chaind doctor</b> is a self-diagnostic suite that identifies and fixes common operational issues automatically.</p>
-            <ul>
-                <li>PID file staleness</li>
-                <li>Socket permission errors</li>
-                <li>SQLite integrity checks</li>
-                <li>Credential backend status</li>
-            </ul>
+      <div class="reveal d3">
+        <p>The current CLI already exposes <code>read</code>, <code>watch</code>, <code>search</code>, and <code>send</code>. The most natural next step is a richer <code>stream</code>-style developer experience.</p>
+        <div class="proof-grid" style="margin-top:1rem;">
+          <div class="proof-card"><h3>Today</h3><p>read / watch / search / send through one daemon</p></div>
+          <div class="proof-card"><h3>Next</h3><p>pipe-first streaming UX for builds, ops logs, and agent output</p></div>
         </div>
-        <div class="reveal d4 term-mockup">
-            <div class="term-bar"><div class="term-dot" style="background: #ff5f56;"></div><div class="term-dot" style="background: #ffbd2e;"></div><div class="term-dot" style="background: #27c93f;"></div></div>
-            <div class="term-content">
-                $ chaind doctor --fix<br>
-                <span class="hl-green">[OK]</span> Config valid.<br>
-                <span class="hl-red">[ERR]</span> PID file stale. Fixing...<br>
-                <span class="hl-green">[OK]</span> Socket permissions (0600).<br>
-                <span class="hl-cyan">DONE. Ready to start.</span>
-            </div>
+      </div>
+      <div class="reveal d4 term-mockup terminal-focus">
+        <div class="term-bar"><div class="term-dot" style="background:#ff5f56;"></div><div class="term-dot" style="background:#ffbd2e;"></div><div class="term-dot" style="background:#27c93f;"></div></div>
+        <div class="term-content">
+          $ make build 2&gt;&amp;1 | chaind stream --room dev<br><br>
+          <span class="warn">roadmap UX sketch</span><br>
+          <span class="result">[Matrix] build started...</span><br>
+          <span class="result">[Matrix] success in 42s.</span>
         </div>
+      </div>
     </div>
   </div>
 
-  <!-- SLIDE 22: THE FUTURE & MOAT -->
-  <div class="slide center">
-    <div class="tag reveal d1"><span class="dot"></span>The Moat</div>
-    <h2 class="reveal d2">Built for the <span style="color: var(--yellow)">Sovereign AI</span> Era.</h2>
+  <div class="slide center" data-act="Act III - Proof" data-status="live">
+    <div class="slide-header reveal d1">
+      <div class="tag"><span class="dot"></span>Search</div>
+      <div class="header-right"><span class="status-chip live">Live Now</span></div>
+    </div>
+    <h2 class="reveal d2">Local search over synced <span class="accent-pink">history</span>.</h2>
+    <div class="metric-row reveal d3" style="margin-top:0.4rem;">
+      <span class="metric-pill"><strong>engine</strong> SQLite FTS5</span>
+      <span class="metric-pill"><strong>scope</strong> locally synced history</span>
+      <span class="metric-pill"><strong>shape</strong> machine-readable results</span>
+    </div>
+    <div class="reveal d4 term-mockup terminal-focus" style="width:min(50rem, 100%); margin-top:1.6rem;">
+      <div class="term-content">
+        $ chaind search "github.com/fosscu" --since 365d<br><br>
+        <span class="result">[matrix] found matching history</span><br>
+        <span class="result">[telegram] found matching history</span><br>
+        <span class="subtle">latency depends on local dataset and host machine</span>
+      </div>
+    </div>
+    <p class="reveal d5" style="margin-top:1.2rem;">The important win is not one benchmark screenshot. It is that search runs locally over the same normalized history your agents already consume.</p>
+  </div>
+
+  <div class="slide center" data-act="Act III - Proof" data-status="live">
+    <div class="slide-header reveal d1">
+      <div class="tag"><span class="dot"></span>Philosophy</div>
+      <div class="header-right"><span class="status-chip live">Live Now</span></div>
+    </div>
+    <h2 class="reveal d2">Messaging with <span class="accent-cyan">Unix ergonomics</span>.</h2>
+    <div class="reveal d3 diagram-container">
+      <svg viewBox="0 0 760 220" aria-hidden="true" style="max-width:50rem;">
+        <rect x="50" y="76" width="170" height="70" rx="18" fill="rgba(85,214,255,0.92)"></rect>
+        <text x="82" y="119" fill="#071019" font-family="IBM Plex Mono" font-size="18" font-weight="700">chaind watch</text>
+        <path d="M220 111 L324 111" stroke="#ffffff" stroke-width="4"></path>
+        <rect x="324" y="76" width="112" height="70" rx="18" fill="rgba(255,127,168,0.92)"></rect>
+        <text x="358" y="119" fill="#071019" font-family="IBM Plex Mono" font-size="18" font-weight="700">grep</text>
+        <path d="M436 111 L548 111" stroke="#ffffff" stroke-width="4"></path>
+        <rect x="548" y="76" width="164" height="70" rx="18" fill="rgba(94,229,154,0.92)"></rect>
+        <text x="579" y="119" fill="#071019" font-family="IBM Plex Mono" font-size="18" font-weight="700">chaind send</text>
+      </svg>
+    </div>
+    <p class="reveal d4 hero-copy">The strongest long-term UX is simple: keep the daemon stable, keep the schema stable, and let people compose with the tools they already know.</p>
+  </div>
+
+  <div class="slide" data-act="Act III - Proof" data-status="live">
+    <div class="slide-header reveal d1">
+      <div class="tag"><span class="dot"></span>Operations</div>
+      <div class="header-right"><span class="status-chip live">Live Now</span></div>
+    </div>
+    <h2 class="reveal d2">Local operations with practical <span class="accent-green">rigour</span>.</h2>
+    <div class="split">
+      <div class="reveal d3">
+        <p><code>chaind doctor</code> already checks common local setup issues and can repair some filesystem and socket problems with <code>--fix</code>.</p>
+        <ul class="compact-list">
+          <li>data and config directories</li>
+          <li>daemon socket presence and permissions</li>
+          <li>local database presence</li>
+          <li>credential availability for configured adapters</li>
+        </ul>
+      </div>
+      <div class="reveal d4 term-mockup terminal-focus">
+        <div class="term-bar"><div class="term-dot" style="background:#ff5f56;"></div><div class="term-dot" style="background:#ffbd2e;"></div><div class="term-dot" style="background:#27c93f;"></div></div>
+        <div class="term-content">
+          $ chaind doctor --fix<br>
+          <span class="result">[ok] data directory exists</span><br>
+          <span class="fail">[err] stale socket found</span><br>
+          <span class="result">[ok] repaired socket permissions</span><br>
+          <span class="result">[ok] local setup ready</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide center" data-act="Act IV - Next" data-status="next">
+    <div class="slide-header reveal d1">
+      <div class="tag"><span class="dot"></span>After the Hackathon</div>
+      <div class="header-right"><span class="status-chip next">Next</span></div>
+    </div>
+    <h2 class="reveal d2">Where this becomes much more <span class="accent-amber">powerful</span>.</h2>
     <div class="bento-grid reveal d3">
-        <div class="bento-card"><h3>Pure Go</h3><p>No CGO. Cross-compiles to anything.</p></div>
-        <div class="bento-card"><h3>Host-Agnostic</h3><p>Runs on a $15 Raspberry Pi.</p></div>
-        <div class="bento-card"><h3>Privacy-Hardened</h3><p>No telemetry. No cloud. No compromise.</p></div>
+      <div class="bento-card solution"><h3>Token UX hardening</h3><p>Finish the room-scoped issuance and operator workflow so permissions feel first-class.</p></div>
+      <div class="bento-card warn"><h3>Deeper adapters</h3><p>Push WhatsApp maturity forward, keep Telegram improving, and make IRC truly pluggable instead of placeholder.</p></div>
+      <div class="bento-card live"><h3>Pipe-first tooling</h3><p>Turn the daemon into the obvious transport layer for moderation, summarization, streaming logs, and multilingual automation.</p></div>
     </div>
-    <p class="reveal d4 hl-cyan" style="margin-top: 2rem;">Vercel targets SaaS developers. We target Sovereign Humans.</p>
+    <p class="reveal d4 hl-cyan" style="margin-top:1.3rem;">The long-term value is not another bot. It is a local messaging substrate that communities can actually build on.</p>
   </div>
 
-  <!-- SLIDE 23: DEMO TRANSITION -->
-  <div class="slide center">
-    <div class="tag reveal d1"><span class="dot"></span>Final Demo</div>
-    <h1 class="reveal d2" style="font-size: 6rem;">Ready for <span style="color: var(--green)">Magic</span>?</h1>
-    <p class="reveal d3" style="font-size: 2.5rem;">Switching to terminal to show <b>chaind</b> in action.</p>
-    <div class="reveal d4 term-mockup" style="width: 600px; margin-top: 3rem;">
-        <div class="term-content center" style="padding: 2rem;">
-            $ chaind watch --all --agent
-        </div>
+  <div class="slide center" data-act="Act IV - Demo" data-status="live">
+    <div class="slide-header reveal d1">
+      <div class="tag"><span class="dot"></span>Final Demo</div>
+      <div class="header-right"><span class="status-chip live">Live Now</span></div>
+    </div>
+    <h1 class="reveal d2">From slides to <span class="accent-green">terminal</span>.</h1>
+    <p class="reveal d3 hero-copy">Live now: one daemon, one local interface, and a real path to read, search, and act across community messaging surfaces.</p>
+    <div class="reveal d4 term-mockup terminal-focus" style="width:min(38rem, 100%); margin-top:2rem;">
+      <div class="term-content center" style="padding:2rem;">
+        $ chaind watch --all --agent
+      </div>
     </div>
   </div>
 
-  <!-- SLIDE 24: CONCLUSION -->
-  <div class="slide center">
-    <div class="tag reveal d1"><span class="dot"></span>FOSS Hack 2026</div>
-    <h1>chaind<span style="color: var(--cyan)">.</span></h1>
-    <h2 style="font-weight: 300;">Empowering <span style="color: var(--green)">Alice</span>. Empowering You.</h2>
-    <p style="margin-top: 2.5rem; color: #fff; font-family: var(--font-code); font-size: 2.5rem;">github.com/fosscu/chaind</p>
-    <div class="reveal d3" style="margin-top: 4rem; display: flex; gap: 3rem;">
-        <span class="tag yellow">Indian FOSS</span>
-        <span class="tag">Sovereign AI</span>
-        <span class="tag cyan">Pure Go</span>
+  <div class="slide center" data-act="Act IV - Close">
+    <div class="slide-header reveal d1">
+      <div class="tag"><span class="dot"></span>FOSS Hack 2026</div>
+    </div>
+    <h1 class="reveal d2">chaind<span class="accent-cyan">.</span></h1>
+    <p class="hero-sub reveal d3">Local first. Unified. Built for real communities.</p>
+    <div class="metric-row reveal d4" style="margin-top:1.8rem;">
+      <div class="metric-card"><strong>Problem</strong><span>fragmented community operations</span></div>
+      <div class="metric-card"><strong>Proof</strong><span>one local daemon and one shared schema</span></div>
+      <div class="metric-card"><strong>Direction</strong><span>a sovereign messaging layer for agents</span></div>
+    </div>
+    <p class="reveal d5" style="margin-top:2rem; color:#ffffff; font-family:var(--font-code); font-size:1.5rem;">github.com/fosscu/chaind</p>
+    <div class="chip-row reveal d6" style="margin-top:2rem; justify-content:center;">
+      <span class="tag yellow">Indian FOSS</span>
+      <span class="tag cyan">local agents</span>
+      <span class="tag green">machine-first CLI</span>
     </div>
   </div>
 
@@ -743,38 +1474,61 @@
 <script>
   const slides = document.querySelectorAll('.slide');
   const progress = document.getElementById('progress');
+  const metaAct = document.getElementById('meta-act');
+  const metaStatus = document.getElementById('meta-status');
+  const metaSlide = document.getElementById('meta-slide');
+  const statusLabels = {
+    live: 'Live Now',
+    prototype: 'Prototype',
+    next: 'Next'
+  };
   let currentSlide = 0;
 
   function updateSlide() {
-    slides.forEach((s, i) => {
-      s.classList.remove('active');
-      if (i === currentSlide) s.classList.add('active');
+    slides.forEach((slide, index) => {
+      slide.classList.toggle('active', index === currentSlide);
     });
+
+    const active = slides[currentSlide];
+    metaAct.textContent = active.dataset.act || '';
+    metaSlide.textContent = String(currentSlide + 1).padStart(2, '0') + ' / ' + String(slides.length).padStart(2, '0');
     progress.style.width = ((currentSlide + 1) / slides.length) * 100 + '%';
+
+    const status = active.dataset.status || '';
+    if (statusLabels[status]) {
+      metaStatus.style.display = 'inline-flex';
+      metaStatus.className = 'status-chip ' + status;
+      metaStatus.textContent = statusLabels[status];
+    } else {
+      metaStatus.style.display = 'none';
+    }
   }
 
-  window.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
-      if (currentSlide < slides.length - 1) currentSlide++;
+  window.addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowRight' || event.key === ' ' || event.key === 'PageDown') {
+      if (currentSlide < slides.length - 1) currentSlide += 1;
       updateSlide();
     }
-    if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
-      if (currentSlide > 0) currentSlide--;
+
+    if (event.key === 'ArrowLeft' || event.key === 'PageUp') {
+      if (currentSlide > 0) currentSlide -= 1;
       updateSlide();
     }
   });
 
-  // Touch Support
   let touchStartX = 0;
-  window.addEventListener('touchstart', e => touchStartX = e.touches[0].clientX);
-  window.addEventListener('touchend', e => {
-    const touchEndX = e.changedTouches[0].clientX;
-    if (touchStartX - touchEndX > 50) {
-        if (currentSlide < slides.length - 1) currentSlide++;
-        updateSlide();
-    } else if (touchEndX - touchStartX > 50) {
-        if (currentSlide > 0) currentSlide--;
-        updateSlide();
+  window.addEventListener('touchstart', (event) => {
+    touchStartX = event.touches[0].clientX;
+  });
+
+  window.addEventListener('touchend', (event) => {
+    const touchEndX = event.changedTouches[0].clientX;
+    if (touchStartX - touchEndX > 50 && currentSlide < slides.length - 1) {
+      currentSlide += 1;
+      updateSlide();
+    } else if (touchEndX - touchStartX > 50 && currentSlide > 0) {
+      currentSlide -= 1;
+      updateSlide();
     }
   });
 

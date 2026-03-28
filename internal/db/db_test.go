@@ -12,6 +12,7 @@ func TestInitDB(t *testing.T) {
 	// Setup a temporary home directory so we don't mess up real data
 	tmpHome := t.TempDir()
 	t.Setenv("HOME", tmpHome)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(tmpHome, ".config"))
 
 	// 1. Initialize the SQLite DB
 	database, err := db.InitDB()

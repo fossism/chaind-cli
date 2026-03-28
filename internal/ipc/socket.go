@@ -40,6 +40,9 @@ func NewIPCServer(store *store.Store, router *daemon.AdapterRouter) *IPCServer {
 	mux.HandleFunc("/api/v1/messages/search", s.requireToken(s.handleSearch))
 	mux.HandleFunc("/api/v1/adapters/status", s.requireToken(s.handleGetStatus))
 	mux.HandleFunc("/api/v1/messages/send", s.requireToken(s.handleSendMessage))
+	mux.HandleFunc("/api/v1/messages/reply", s.requireToken(s.handleReply))
+	mux.HandleFunc("/api/v1/messages/react", s.requireToken(s.handleReact))
+	mux.HandleFunc("/api/v1/messages/delete", s.requireToken(s.handleDeleteMessage))
 	mux.HandleFunc("/api/v1/messages/watch", s.requireToken(s.handleWatch))
 	mux.HandleFunc("/api/v1/moderate", s.requireToken(s.handleModerate))
 
@@ -82,6 +85,15 @@ func (s *IPCServer) handleWatch(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "data: %s\n\n", string(data))
 		flusher.Flush()
 	}
+}
+
+// StartOnListener serves on the provided listener. Used by tests to bind to a temp Unix socket.
+func (s *IPCServer) StartOnListener(ctx context.Context, ln net.Listener) error {
+	go func() {
+		<-ctx.Done()
+		s.server.Shutdown(context.Background())
+	}()
+	return s.server.Serve(ln)
 }
 
 func (s *IPCServer) Start(ctx context.Context) error {
@@ -300,6 +312,89 @@ func (s *IPCServer) handleSendMessage(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(msg)
+}
+
+type replyReq struct {
+	Platform string `json:"platform"`
+	MsgID    string `json:"id"`
+	Text     string `json:"text"`
+}
+
+func (s *IPCServer) handleReply(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req replyReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error":"invalid json"}`, http.StatusBadRequest)
+		return
+	}
+
+	msg, err := s.router.Reply(req.Platform, req.MsgID, req.Text)
+	if err != nil {
+		http.Error(w, fmt.Sprintf(`{"error": "%s"}`, err.Error()), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(msg)
+}
+
+type reactReq struct {
+	Platform string `json:"platform"`
+	MsgID    string `json:"id"`
+	Emoji    string `json:"emoji"`
+}
+
+func (s *IPCServer) handleReact(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req reactReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error":"invalid json"}`, http.StatusBadRequest)
+		return
+	}
+
+	err := s.router.React(req.Platform, req.MsgID, req.Emoji)
+	if err != nil {
+		http.Error(w, fmt.Sprintf(`{"error": "%s"}`, err.Error()), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"status": "reacted"})
+}
+
+type deleteReq struct {
+	Platform string `json:"platform"`
+	MsgID    string `json:"id"`
+}
+
+func (s *IPCServer) handleDeleteMessage(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req deleteReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error":"invalid json"}`, http.StatusBadRequest)
+		return
+	}
+
+	err := s.router.DeleteMessage(req.Platform, req.MsgID)
+	if err != nil {
+		http.Error(w, fmt.Sprintf(`{"error": "%s"}`, err.Error()), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"status": "deleted"})
 }
 
 type modReq struct {

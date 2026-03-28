@@ -18,7 +18,7 @@ func TestMessageJSON(t *testing.T) {
 			ID: "matrix:!foo:example.com",
 		},
 		Author: Author{
-			ID: "@alice:example.com",
+			ID: "@Riya:example.com",
 		},
 		Content: Content{
 			Type: "text",

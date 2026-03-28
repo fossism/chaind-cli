@@ -151,6 +151,15 @@ var doctorCmd = &cobra.Command{
 			}
 		}
 
+		// 7b. Check WhatsApp session
+		waDB := filepath.Join(dataDir, "whatsapp.db")
+		if _, err := os.Stat(waDB); err == nil {
+			fmt.Printf("  ✓ whatsapp session found: %s\n", waDB)
+			passed++
+		} else {
+			fmt.Println("  ! whatsapp session missing (link via 'chaind daemon start')")
+		}
+
 		// 8. Check environment variables
 		envVars := []string{"CHAIND_TELEGRAM_API_ID", "CHAIND_TELEGRAM_API_HASH"}
 		for _, env := range envVars {

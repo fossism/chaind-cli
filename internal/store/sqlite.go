@@ -18,19 +18,9 @@ type Store struct {
 	writer  *StoreWriter
 }
 
-func NewStore() (*Store, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get home dir: %w", err)
-	}
-
-	dbDir := filepath.Join(home, ".local", "share", "chaind")
-	if err := os.MkdirAll(dbDir, 0700); err != nil {
-		return nil, fmt.Errorf("failed to create db directory: %w", err)
-	}
-
-	dbPath := filepath.Join(dbDir, "messages.db")
-
+// NewStoreFromPath opens (or creates) a Store at the given path.
+// Used by tests to open a t.TempDir()-isolated database.
+func NewStoreFromPath(dbPath string) (*Store, error) {
 	// Read connection pool
 	db, err := sqlx.Open("sqlite", dbPath)
 	if err != nil {
@@ -62,6 +52,20 @@ func NewStore() (*Store, error) {
 
 	s.writer = NewStoreWriter(writeDB)
 	return s, nil
+}
+
+func NewStore() (*Store, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get home dir: %w", err)
+	}
+
+	dbDir := filepath.Join(home, ".local", "share", "chaind")
+	if err := os.MkdirAll(dbDir, 0700); err != nil {
+		return nil, fmt.Errorf("failed to create db directory: %w", err)
+	}
+
+	return NewStoreFromPath(filepath.Join(dbDir, "messages.db"))
 }
 
 func (s *Store) migrate() error {

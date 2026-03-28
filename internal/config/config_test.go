@@ -12,6 +12,7 @@ func TestSaveAndLoadConfig(t *testing.T) {
 	// Setup a temporary home directory so we don't overwrite the real one
 	tmpHome := t.TempDir()
 	t.Setenv("HOME", tmpHome)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(tmpHome, ".config"))
 
 	expectedUser := "test_dev"
 	expectedToken := "ghp_fakeToken12345"

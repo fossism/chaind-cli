@@ -22,6 +22,9 @@ var (
 	sendAt       string
 	sendApproval bool
 	sendDryRun   bool
+
+	replyMsgID string
+	reactEmoji string
 )
 
 var sendCmd = &cobra.Command{
@@ -62,6 +65,123 @@ var sendCmd = &cobra.Command{
 
 		fmt.Println("Status: delivered.")
 		fmt.Println("Receipt:", string(respBody))
+	},
+}
+
+var replyCmd = &cobra.Command{
+	Use:   "reply",
+	Short: "Reply to a specific message",
+	Run: func(cmd *cobra.Command, args []string) {
+		payload := map[string]interface{}{
+			"platform": sendPlatform,
+			"id":       replyMsgID,
+			"text":     sendText,
+		}
+
+		body, _ := json.Marshal(payload)
+		req, err := http.NewRequest("POST", "http://unix/api/v1/messages/reply", bytes.NewReader(body))
+		if err != nil {
+			fmt.Println("Error:", err)
+			return
+		}
+
+		tok := os.Getenv("CHAIND_TOKEN")
+		if tok != "" {
+			req.Header.Set("Authorization", "Bearer "+tok)
+		}
+
+		resp, err := IPCClient().Do(req)
+		if err != nil {
+			fmt.Printf("Transmission failed: %v\n", err)
+			os.Exit(1)
+		}
+		defer resp.Body.Close()
+
+		respBody, _ := io.ReadAll(resp.Body)
+		if resp.StatusCode != http.StatusOK {
+			fmt.Printf("Daemon rejected reply (HTTP %d): %s\n", resp.StatusCode, string(respBody))
+			os.Exit(1)
+		}
+
+		fmt.Println("Reply sent.")
+		fmt.Println("Receipt:", string(respBody))
+	},
+}
+
+var reactCmd = &cobra.Command{
+	Use:   "react",
+	Short: "React to a specific message with an emoji",
+	Run: func(cmd *cobra.Command, args []string) {
+		payload := map[string]interface{}{
+			"platform": sendPlatform,
+			"id":       replyMsgID,
+			"emoji":    reactEmoji,
+		}
+
+		body, _ := json.Marshal(payload)
+		req, err := http.NewRequest("POST", "http://unix/api/v1/messages/react", bytes.NewReader(body))
+		if err != nil {
+			fmt.Println("Error:", err)
+			return
+		}
+
+		tok := os.Getenv("CHAIND_TOKEN")
+		if tok != "" {
+			req.Header.Set("Authorization", "Bearer "+tok)
+		}
+
+		resp, err := IPCClient().Do(req)
+		if err != nil {
+			fmt.Printf("Transmission failed: %v\n", err)
+			os.Exit(1)
+		}
+		defer resp.Body.Close()
+
+		respBody, _ := io.ReadAll(resp.Body)
+		if resp.StatusCode != http.StatusOK {
+			fmt.Printf("Daemon rejected reaction (HTTP %d): %s\n", resp.StatusCode, string(respBody))
+			os.Exit(1)
+		}
+
+		fmt.Println("Reaction sent.")
+	},
+}
+
+var deleteMsgCmd = &cobra.Command{
+	Use:   "delete",
+	Short: "Delete a specific message",
+	Run: func(cmd *cobra.Command, args []string) {
+		payload := map[string]interface{}{
+			"platform": sendPlatform,
+			"id":       replyMsgID,
+		}
+
+		body, _ := json.Marshal(payload)
+		req, err := http.NewRequest("POST", "http://unix/api/v1/messages/delete", bytes.NewReader(body))
+		if err != nil {
+			fmt.Println("Error:", err)
+			return
+		}
+
+		tok := os.Getenv("CHAIND_TOKEN")
+		if tok != "" {
+			req.Header.Set("Authorization", "Bearer "+tok)
+		}
+
+		resp, err := IPCClient().Do(req)
+		if err != nil {
+			fmt.Printf("Transmission failed: %v\n", err)
+			os.Exit(1)
+		}
+		defer resp.Body.Close()
+
+		respBody, _ := io.ReadAll(resp.Body)
+		if resp.StatusCode != http.StatusOK {
+			fmt.Printf("Daemon rejected delete (HTTP %d): %s\n", resp.StatusCode, string(respBody))
+			os.Exit(1)
+		}
+
+		fmt.Println("Message deleted.")
 	},
 }
 
@@ -168,6 +288,17 @@ func init() {
 	sendCmd.Flags().StringVar(&sendAt, "at", "", "Schedule time")
 	sendCmd.Flags().BoolVar(&sendApproval, "require-approval", false, "Require HitL")
 
+	replyCmd.Flags().StringVar(&sendPlatform, "platform", "matrix", "Target platform")
+	replyCmd.Flags().StringVar(&replyMsgID, "id", "", "ULID of the message to reply to")
+	replyCmd.Flags().StringVar(&sendText, "text", "", "Reply content")
+
+	reactCmd.Flags().StringVar(&sendPlatform, "platform", "matrix", "Target platform")
+	reactCmd.Flags().StringVar(&replyMsgID, "id", "", "ULID of the message to react to")
+	reactCmd.Flags().StringVar(&reactEmoji, "emoji", "", "Emoji to react with")
+
+	deleteMsgCmd.Flags().StringVar(&sendPlatform, "platform", "matrix", "Target platform")
+	deleteMsgCmd.Flags().StringVar(&replyMsgID, "id", "", "ULID of the message to delete")
+
 	broadcastCmd.Flags().StringVar(&sendPlatform, "platform", "matrix,telegram", "Target platforms")
 	broadcastCmd.Flags().StringVar(&sendRoom, "rooms", "", "Comma-separated rooms (e.g. matrix:!room1,telegram:-100123)")
 	broadcastCmd.Flags().StringVar(&sendText, "text", "", "Message content")
@@ -175,5 +306,8 @@ func init() {
 	broadcastCmd.Flags().BoolVar(&sendApproval, "require-approval", false, "Require HitL")
 
 	rootCmd.AddCommand(sendCmd)
+	rootCmd.AddCommand(replyCmd)
+	rootCmd.AddCommand(reactCmd)
+	rootCmd.AddCommand(deleteMsgCmd)
 	rootCmd.AddCommand(broadcastCmd)
 }

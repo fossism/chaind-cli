@@ -11,12 +11,19 @@ import (
 // MockAdapter implements Adapter for unit tests
 type MockAdapter struct {
 	OutboundMessages []schema.Message
+	watchCh          chan schema.Message
 }
 
 func NewMockAdapter() *MockAdapter {
 	return &MockAdapter{
 		OutboundMessages: []schema.Message{},
+		watchCh:          make(chan schema.Message, 64),
 	}
+}
+
+// SendToWatch pushes a message into the channel returned by Watch.
+func (m *MockAdapter) SendToWatch(msg schema.Message) {
+	m.watchCh <- msg
 }
 
 func (m *MockAdapter) Platform() string {
@@ -37,8 +44,7 @@ func (m *MockAdapter) ReadHistory(roomID string, limit int, since time.Time) ([]
 }
 
 func (m *MockAdapter) Watch(ctx context.Context, roomID string) (<-chan schema.Message, error) {
-	ch := make(chan schema.Message)
-	return ch, nil
+	return m.watchCh, nil
 }
 
 func (m *MockAdapter) Send(roomID, text string) (schema.Message, error) {

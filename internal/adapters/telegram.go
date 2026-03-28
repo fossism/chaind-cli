@@ -15,6 +15,9 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/celestix/gotgproto"
+	"github.com/celestix/gotgproto/dispatcher/handlers"
+	"github.com/celestix/gotgproto/dispatcher/handlers/filters"
+	"github.com/celestix/gotgproto/ext"
 	"github.com/celestix/gotgproto/sessionMaker"
 	"github.com/gotd/td/tg"
 	"github.com/glebarez/sqlite"
@@ -66,6 +69,11 @@ func (t *TelegramAdapter) Start(ctx context.Context) error {
 	}
 
 	t.client = client
+
+	// Register message dispatcher
+	client.Dispatcher.AddHandler(handlers.NewMessage(filters.Message.All, func(ctx *ext.Context, update *ext.Update) error {
+		return t.handleMessage(update.EffectiveMessage)
+	}))
 
 	errChan := make(chan error, 1)
 	go func() {
