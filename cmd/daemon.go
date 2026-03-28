@@ -6,6 +6,8 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+	"net/http"
+	"errors"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -104,7 +106,7 @@ var daemonCmd = &cobra.Command{
 		// Initialize WhatsApp Adapter
 		waEnabled := os.Getenv("CHAIND_WHATSAPP_ENABLED") == "true"
 		waRisk := os.Getenv("CHAIND_WHATSAPP_ACCEPTED_RISK") == "true"
-		
+
 		if waEnabled && waRisk {
 			waAdapter, err := adapters.NewWhatsAppAdapter(dbStore, waEnabled, waRisk)
 			if err == nil {
@@ -117,7 +119,7 @@ var daemonCmd = &cobra.Command{
 		}
 
 		// Wait for shutdown signal or sub-process error
-		if err := g.Wait(); err != nil {
+		if err := g.Wait(); err != nil && !errors.Is(err, http.ErrServerClosed) && err.Error() != "http: Server closed" {
 			log.Error().Err(err).Msg("Daemon exited with error")
 		} else {
 			log.Info().Msg("Shutting down cleanly...")

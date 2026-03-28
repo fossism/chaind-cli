@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -12,12 +13,16 @@ import (
 	"github.com/fossism/chaind-cli/internal/store"
 	"github.com/oklog/ulid/v2"
 	"github.com/rs/zerolog/log"
+	
+	"google.golang.org/protobuf/proto"
 
 	_ "github.com/glebarez/go-sqlite"
 	"github.com/mdp/qrterminal/v3"
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/store/sqlstore"
+	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
+	"go.mau.fi/whatsmeow/proto/waE2E"
 	waLog "go.mau.fi/whatsmeow/util/log"
 )
 
@@ -181,11 +186,37 @@ func (w *WhatsAppAdapter) Watch(ctx context.Context, roomID string) (<-chan sche
 }
 
 func (w *WhatsAppAdapter) Send(roomID, text string) (schema.Message, error) {
-	return schema.Message{}, fmt.Errorf("whatsapp send not formally exposed without full JID maps")
+	roomStr := strings.TrimPrefix(roomID, "whatsapp:")
+	jid, err := types.ParseJID(roomStr)
+	if err != nil {
+		if !strings.Contains(roomStr, "@") {
+			jid = types.NewJID(roomStr, types.DefaultUserServer)
+		} else {
+			return schema.Message{}, fmt.Errorf("invalid whatsapp jid format: %w", err)
+		}
+	}
+
+	waMsg := &waE2E.Message{
+		Conversation: proto.String(text),
+	}
+
+	resp, err := w.client.SendMessage(context.Background(), jid, waMsg)
+	if err != nil {
+		return schema.Message{}, fmt.Errorf("failed to send: %w", err)
+	}
+
+	return schema.Message{
+		ID:         ulid.Make().String(),
+		Platform:   "whatsapp",
+		PlatformID: resp.ID,
+		Room:       schema.Room{ID: roomID},
+		Content:    schema.Content{Type: "text", Text: text},
+		Timestamp:  resp.Timestamp,
+	}, nil
 }
 
 func (w *WhatsAppAdapter) Reply(msgID, text string) (schema.Message, error) {
-	return schema.Message{}, fmt.Errorf("whatsapp reply not yet implemented")
+	return schema.Message{}, fmt.Errorf("whatsapp reply partially implemented, use send")
 }
 
 func (w *WhatsAppAdapter) React(msgID, emoji string) error {
