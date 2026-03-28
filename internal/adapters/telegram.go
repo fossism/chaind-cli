@@ -3,6 +3,8 @@ package adapters
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strconv"
 	"sync"
 	"time"
@@ -15,6 +17,7 @@ import (
 	"github.com/celestix/gotgproto"
 	"github.com/celestix/gotgproto/sessionMaker"
 	"github.com/gotd/td/tg"
+	"github.com/glebarez/sqlite"
 )
 
 type TelegramAdapter struct {
@@ -47,12 +50,15 @@ func (t *TelegramAdapter) Start(ctx context.Context) error {
 
 	clientType := gotgproto.ClientTypeBot(t.token)
 	
+	home, _ := os.UserHomeDir()
+	sessionPath := filepath.Join(home, ".local", "share", "chaind", "telegram.session")
+
 	client, err := gotgproto.NewClient(
 		t.apiID,
 		t.apiHash,
 		clientType,
 		&gotgproto.ClientOpts{
-			Session: sessionMaker.SimpleSession(),
+			Session: sessionMaker.SqlSession(sqlite.Open(sessionPath)),
 		},
 	)
 	if err != nil {
@@ -94,11 +100,32 @@ func (t *TelegramAdapter) handleMessage(msg tg.MessageClass) error {
 		
 		roomID := senderID // In MTProto DMs, room is the sender's Peer ID
 		
+		var attachments []schema.Attachment
+		if m.Media != nil {
+			switch media := m.Media.(type) {
+			case *tg.MessageMediaPhoto:
+				attachments = append(attachments, schema.Attachment{
+					URI:      fmt.Sprintf("telegram-photo://%d", media.Photo.GetID()),
+					MimeType: "image/jpeg",
+					Size:     0,
+				})
+			case *tg.MessageMediaDocument:
+				doc, ok := media.Document.AsNotEmpty()
+				if ok {
+					attachments = append(attachments, schema.Attachment{
+						URI:      fmt.Sprintf("telegram-document://%d", doc.GetID()),
+						MimeType: doc.MimeType,
+						Size:     doc.Size,
+					})
+				}
+			}
+		}
+
 		msgOut := schema.Message{
 			SchemaVersion: "1.0",
-			ID:         ulid.Make().String(),
-			Platform:   "telegram",
-			PlatformID: strconv.Itoa(m.ID),
+			ID:            ulid.Make().String(),
+			Platform:      "telegram",
+			PlatformID:    strconv.Itoa(m.ID),
 			Room: schema.Room{
 				ID: fmt.Sprintf("telegram:%s", roomID),
 			},
@@ -106,8 +133,9 @@ func (t *TelegramAdapter) handleMessage(msg tg.MessageClass) error {
 				ID: senderID,
 			},
 			Content: schema.Content{
-				Type: "text",
-				Text: text,
+				Type:        "text",
+				Text:        text,
+				Attachments: attachments,
 			},
 			Timestamp: time.Unix(int64(m.Date), 0).UTC(),
 		}

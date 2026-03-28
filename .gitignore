@@ -1,4 +1,20 @@
+# Reference architecture docs (not part of the codebase)
 chat-sdk-brings-agents-to-your-users.md
 notStrictSampleLibraries.md
 NotStrictReferenceArchitecture.md
 TheGrandestVisionOriginalArchitecture.md
+
+# Build artifacts
+chaind
+dist/
+build.log
+test.log
+test2.log
+test3.log
+*.log
+
+# Local data & sessions
+*.session
+*.db
+*.db-wal
+*.db-shm

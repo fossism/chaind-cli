@@ -37,8 +37,15 @@ type Author struct {
 }
 
 type Content struct {
-	Type        string   `json:"type"` // text|image|file|audio|sticker|event
-	Text        string   `json:"text"`
-	HTML        *string  `json:"html"`
-	Attachments []string `json:"attachments"` // URIs or IDs
+	Type        string       `json:"type"` // text|image|file|audio|sticker|event
+	Text        string       `json:"text"`
+	HTML        *string      `json:"html"`
+	Attachments []Attachment `json:"attachments"` // Multimodal local file URIs
+}
+
+type Attachment struct {
+	URI      string `json:"uri"`      // file:///path/to/media.jpg
+	MimeType string `json:"mime"`     // image/jpeg
+	Size     int64  `json:"size"`     // bytes
+	Filename string `json:"filename"` // original name
 }

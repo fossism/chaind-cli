@@ -95,4 +95,11 @@ CREATE VIRTUAL TABLE IF NOT EXISTS messages_fts USING fts5(
     content='messages',
     content_rowid='rowid'
 );
+
+CREATE TABLE IF NOT EXISTS sync_cursors (
+    platform TEXT,
+    room_id TEXT,
+    cursor_timestamp INTEGER,
+    PRIMARY KEY (platform, room_id)
+);
 `

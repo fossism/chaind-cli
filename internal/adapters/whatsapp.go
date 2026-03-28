@@ -111,7 +111,26 @@ func (w *WhatsAppAdapter) handleEvent(rawEvt interface{}) {
 			text = evt.Message.GetExtendedTextMessage().GetText()
 		}
 
-		if text == "" {
+		var attachments []schema.Attachment
+		if img := evt.Message.GetImageMessage(); img != nil {
+			text = img.GetCaption()
+			attachments = append(attachments, schema.Attachment{
+				URI:      "whatsapp-image", // pending active download layer
+				MimeType: img.GetMimetype(),
+				Size:     int64(img.GetFileLength()),
+			})
+		}
+		if doc := evt.Message.GetDocumentMessage(); doc != nil {
+			text = doc.GetCaption()
+			attachments = append(attachments, schema.Attachment{
+				URI:      "whatsapp-document", // pending active download layer
+				MimeType: doc.GetMimetype(),
+				Size:     int64(doc.GetFileLength()),
+				Filename: doc.GetTitle(),
+			})
+		}
+
+		if text == "" && len(attachments) == 0 {
 			return
 		}
 
@@ -128,7 +147,7 @@ func (w *WhatsAppAdapter) handleEvent(rawEvt interface{}) {
 			PlatformID:    evt.Info.ID,
 			Room:          schema.Room{ID: fmt.Sprintf("whatsapp:%s", roomID)},
 			Author:        schema.Author{ID: senderID},
-			Content:       schema.Content{Type: "text", Text: text},
+			Content:       schema.Content{Type: "text", Text: text, Attachments: attachments},
 			Timestamp:     evt.Info.Timestamp.UTC(),
 		}
 

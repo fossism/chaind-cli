@@ -84,6 +84,33 @@ func (s *Store) PushMessage(msg schema.Message) {
 	s.writer.Push(msg)
 }
 
+// DB returns the read connection pool for direct queries (e.g., FTS5 search).
+func (s *Store) DB() *sqlx.DB {
+	return s.db
+}
+
 func (s *Store) Close() error {
+	s.writeDB.Close()
 	return s.db.Close()
+}
+
+// GetCursor retrieves the last sync timestamp for a specific platform and room to allow offline backfill.
+func (s *Store) GetCursor(ctx context.Context, platform, roomID string) (int64, error) {
+	var ts int64
+	err := s.db.QueryRowContext(ctx, "SELECT cursor_timestamp FROM sync_cursors WHERE platform = ? AND room_id = ?", platform, roomID).Scan(&ts)
+	if err != nil {
+		return 0, err
+	}
+	return ts, nil
+}
+
+// SaveCursor persists the latest cursor immediately to the write pool.
+func (s *Store) SaveCursor(ctx context.Context, platform, roomID string, ts int64) error {
+	_, err := s.writeDB.ExecContext(ctx, `
+		INSERT INTO sync_cursors (platform, room_id, cursor_timestamp) 
+		VALUES (?, ?, ?)
+		ON CONFLICT(platform, room_id) 
+		DO UPDATE SET cursor_timestamp=excluded.cursor_timestamp`,
+		platform, roomID, ts)
+	return err
 }

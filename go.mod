@@ -5,6 +5,7 @@ go 1.25.8
 require (
 	github.com/celestix/gotgproto v1.0.0-beta22
 	github.com/glebarez/go-sqlite v1.22.0
+	github.com/glebarez/sqlite v1.11.0
 	github.com/gotd/td v0.142.0
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/mdp/qrterminal/v3 v3.2.1
@@ -37,7 +38,6 @@ require (
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
-	github.com/glebarez/sqlite v1.11.0 // indirect
 	github.com/go-faster/errors v0.7.1 // indirect
 	github.com/go-faster/jx v1.2.0 // indirect
 	github.com/go-faster/xor v1.0.0 // indirect
