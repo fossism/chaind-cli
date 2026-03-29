@@ -18,3 +18,4 @@ test3.log
 *.db
 *.db-wal
 *.db-shm
+test_demo_flows.sh
