@@ -125,7 +125,7 @@ Implement a hermetic, race-detector-clean test suite for the `chaind` daemon. Al
     - Test 50-message batch triggers immediate flush before ticker
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
 
-  - [ ]* 13.2 Write property test for StoreWriter concurrent write completeness
+6  - [ ]* 13.2 Write property test for StoreWriter concurrent write completeness
     - **Property 8: StoreWriter Concurrent Write Completeness**
     - **Validates: Requirements 8.1, 8.5**
 

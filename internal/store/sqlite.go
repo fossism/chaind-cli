@@ -74,6 +74,15 @@ func (s *Store) migrate() error {
 		log.Error().Err(err).Msg("Database migration failed")
 		return err
 	}
+
+	// Migration: Add platform to outbox if missing
+	var columnExists int
+	err = s.db.Get(&columnExists, "SELECT count(*) FROM pragma_table_info('outbox') WHERE name='platform'")
+	if err == nil && columnExists == 0 {
+		log.Info().Msg("Migration: Adding platform column to outbox table")
+		_, _ = s.writeDB.Exec("ALTER TABLE outbox ADD COLUMN platform TEXT")
+	}
+
 	log.Debug().Msg("Database schema initialized")
 	return nil
 }

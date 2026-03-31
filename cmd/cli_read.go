@@ -2,11 +2,14 @@ package cmd
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"strings"
 
+	"github.com/fossism/chaind-cli/internal/schema"
 	"github.com/spf13/cobra"
 )
 
@@ -53,8 +56,22 @@ var readCmd = &cobra.Command{
 		if readAgent {
 			fmt.Println(string(body)) // Raw JSON schema out
 		} else {
-			fmt.Printf("Fetched %d bytes of historic messages\n", len(body))
-			// Real implementation would unmarshal and print human-readable CLI chat logs here
+			var msgs []schema.Message
+			if err := json.Unmarshal(body, &msgs); err != nil {
+				fmt.Printf("Error parsing messages: %v\n", err)
+				return
+			}
+
+			if len(msgs) == 0 {
+				fmt.Println("No messages found.")
+				return
+			}
+
+			fmt.Println("=== UNIFIED HISTORY ===")
+			for _, m := range msgs {
+				ts := m.Timestamp.Format("15:04")
+				fmt.Printf("[%s] %s | %s: %s\n", ts, m.Platform, m.Author.ID, m.Content.Text)
+			}
 		}
 	},
 }
@@ -93,10 +110,20 @@ var watchCmd = &cobra.Command{
 		scanner := bufio.NewScanner(resp.Body)
 		for scanner.Scan() {
 			line := scanner.Text()
-			if line == "" {
+			if line == "" || !strings.HasPrefix(line, "data: ") {
 				continue
 			}
-			fmt.Println(line)
+			
+			data := strings.TrimPrefix(line, "data: ")
+			if readAgent {
+				fmt.Println(data)
+			} else {
+				var m schema.Message
+				if err := json.Unmarshal([]byte(data), &m); err == nil {
+					ts := m.Timestamp.Format("15:04")
+					fmt.Printf("[%s] %s | %s: %s\n", ts, m.Platform, m.Author.ID, m.Content.Text)
+				}
+			}
 		}
 	},
 }

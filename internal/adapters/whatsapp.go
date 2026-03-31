@@ -134,6 +134,11 @@ func (w *WhatsAppAdapter) handleEvent(rawEvt interface{}) {
 			return
 		}
 
+		if evt.Info.Sender.IsEmpty() || evt.Info.Chat.IsEmpty() {
+			log.Warn().Msg("Received WhatsApp message event with empty sender or chat info, skipping")
+			return
+		}
+
 		senderID := evt.Info.Sender.User
 		roomID := evt.Info.Chat.User
 		if evt.Info.IsGroup {
@@ -205,6 +210,10 @@ func (w *WhatsAppAdapter) Watch(ctx context.Context, roomID string) (<-chan sche
 }
 
 func (w *WhatsAppAdapter) Send(roomID, text string) (schema.Message, error) {
+	if !w.client.IsConnected() {
+		return schema.Message{}, fmt.Errorf("whatsapp client is not connected")
+	}
+
 	roomStr := strings.TrimPrefix(roomID, "whatsapp:")
 	if !strings.Contains(roomStr, "@") {
 		roomStr = roomStr + "@" + types.DefaultUserServer
@@ -220,9 +229,13 @@ func (w *WhatsAppAdapter) Send(roomID, text string) (schema.Message, error) {
 		Conversation: proto.String(text),
 	}
 
-	resp, err := w.client.SendMessage(context.Background(), jid, waMsg)
+	// Use a timeout for sending to avoid hanging
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+
+	resp, err := w.client.SendMessage(ctx, jid, waMsg)
 	if err != nil {
-		return schema.Message{}, fmt.Errorf("failed to send: %w", err)
+		return schema.Message{}, fmt.Errorf("whatsapp send failed: %w", err)
 	}
 
 	return schema.Message{

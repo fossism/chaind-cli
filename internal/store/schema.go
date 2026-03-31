@@ -48,6 +48,7 @@ CREATE TABLE IF NOT EXISTS sync_state (
 
 CREATE TABLE IF NOT EXISTS outbox (
     id TEXT PRIMARY KEY,
+    platform TEXT,
     room_id TEXT,
     content TEXT,
     scheduled_at DATETIME,

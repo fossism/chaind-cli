@@ -105,14 +105,24 @@ func (s *IPCServer) StartOnListener(ctx context.Context, ln net.Listener) error 
 }
 
 func (s *IPCServer) Start(ctx context.Context) error {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error().Interface("panic", r).Msg("IPC Server panicked and recovered")
+		}
+	}()
+
 	home, _ := os.UserHomeDir()
 	configDir := filepath.Join(home, ".config", "chaind")
-	os.MkdirAll(configDir, 0700)
+	if err := os.MkdirAll(configDir, 0700); err != nil {
+		return fmt.Errorf("failed to create config directory %s: %w", configDir, err)
+	}
 	
 	sockPath := filepath.Join(configDir, "chaind.sock")
 	
 	// Remove dead socket if exists
-	os.Remove(sockPath)
+	if _, err := os.Stat(sockPath); err == nil {
+		os.Remove(sockPath)
+	}
 
 	listener, err := net.Listen("unix", sockPath)
 	if err != nil {
@@ -123,7 +133,7 @@ func (s *IPCServer) Start(ctx context.Context) error {
 		return fmt.Errorf("failed to secure socket %s: %w", sockPath, err)
 	}
 
-	log.Info().Str("socket", sockPath).Msg("IPC Unix Socket API active")
+	log.Info().Str("socket", sockPath).Msg("IPC Unix Socket API active and listening")
 
 	// Setup HTTP listener if Docker/prefer_http is requested
 	if os.Getenv("CHAIND_PREFER_HTTP") == "true" {
@@ -147,7 +157,11 @@ func (s *IPCServer) Start(ctx context.Context) error {
 		os.Remove(sockPath)
 	}()
 
-	return s.server.Serve(listener)
+	err = s.server.Serve(listener)
+	if err == http.ErrServerClosed {
+		return nil
+	}
+	return err
 }
 
 func (s *IPCServer) handleGetRecentMessages(w http.ResponseWriter, r *http.Request) {

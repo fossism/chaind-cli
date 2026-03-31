@@ -3,6 +3,7 @@ package adapters
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -140,7 +141,21 @@ func (m *MatrixAdapter) Watch(ctx context.Context, roomID string) (<-chan schema
 }
 
 func (m *MatrixAdapter) Send(roomID, text string) (schema.Message, error) {
-	resp, err := m.client.SendText(context.Background(), id.RoomID(roomID), text)
+	targetRoom := strings.TrimPrefix(roomID, "matrix:")
+	
+	// Handle sending to a user ID by creating/finding a DM
+	if strings.HasPrefix(targetRoom, "@") {
+		resp, err := m.client.CreateRoom(context.Background(), &mautrix.ReqCreateRoom{
+			Invite: []id.UserID{id.UserID(targetRoom)},
+			IsDirect: true,
+		})
+		if err != nil {
+			return schema.Message{}, fmt.Errorf("failed to create DM room with %s: %w", targetRoom, err)
+		}
+		targetRoom = string(resp.RoomID)
+	}
+
+	resp, err := m.client.SendText(context.Background(), id.RoomID(targetRoom), text)
 	if err != nil {
 		return schema.Message{}, err
 	}
@@ -148,6 +163,9 @@ func (m *MatrixAdapter) Send(roomID, text string) (schema.Message, error) {
 		ID: ulid.Make().String(),
 		Platform: "matrix",
 		PlatformID: string(resp.EventID),
+		Room: schema.Room{ID: "matrix:" + targetRoom},
+		Content: schema.Content{Type: "text", Text: text},
+		Timestamp: time.Now().UTC(),
 	}, nil
 }
 

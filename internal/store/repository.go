@@ -21,15 +21,15 @@ func (s *Store) GetRecentMessages(ctx context.Context, limit int) ([]schema.Mess
 		ID         string  `db:"id"`
 		Platform   string  `db:"platform"`
 		PlatformID string  `db:"platform_id"`
-		RoomID     string  `db:"room_id"`
-		AuthorID   string  `db:"author_id"`
-		Text       string  `db:"text"`
-		Timestamp  string  `db:"timestamp"`
+		RoomID     *string `db:"room_id"`
+		AuthorID   *string `db:"author_id"`
+		Text       *string `db:"text"`
+		Timestamp  *string `db:"timestamp"`
 		RootID     *string `db:"root_id"`
 		ParentID   *string `db:"parent_id"`
-		Read       bool    `db:"read"`
-		Edited     bool    `db:"edited"`
-		Deleted    bool    `db:"deleted"`
+		Read       *bool   `db:"read"`
+		Edited     *bool   `db:"edited"`
+		Deleted    *bool   `db:"deleted"`
 	}
 
 	var flatMsgs []flatMsg
@@ -41,26 +41,33 @@ func (s *Store) GetRecentMessages(ctx context.Context, limit int) ([]schema.Mess
 
 	var msgs []schema.Message
 	for _, f := range flatMsgs {
-		msgs = append(msgs, schema.Message{
+		m := schema.Message{
 			ID:         f.ID,
 			Platform:   f.Platform,
 			PlatformID: f.PlatformID,
-			Room: schema.Room{
-				ID: f.RoomID,
-			},
-			Author: schema.Author{
-				ID: f.AuthorID,
-			},
-			Content: schema.Content{
-				Text: f.Text,
-				Type: "text",
-			},
-			RootID:    f.RootID,
-			ParentID:  f.ParentID,
-			Read:      f.Read,
-			Edited:    f.Edited,
-			Deleted:   f.Deleted,
-		})
+			RootID:     f.RootID,
+			ParentID:   f.ParentID,
+		}
+		if f.Read != nil {
+			m.Read = *f.Read
+		}
+		if f.Edited != nil {
+			m.Edited = *f.Edited
+		}
+		if f.Deleted != nil {
+			m.Deleted = *f.Deleted
+		}
+		if f.RoomID != nil {
+			m.Room.ID = *f.RoomID
+		}
+		if f.AuthorID != nil {
+			m.Author.ID = *f.AuthorID
+		}
+		if f.Text != nil {
+			m.Content.Text = *f.Text
+			m.Content.Type = "text"
+		}
+		msgs = append(msgs, m)
 	}
 
 	return msgs, nil
@@ -170,15 +177,15 @@ func (s *Store) GetMessage(ctx context.Context, id string) (*schema.Message, err
 		ID         string  `db:"id"`
 		Platform   string  `db:"platform"`
 		PlatformID string  `db:"platform_id"`
-		RoomID     string  `db:"room_id"`
-		AuthorID   string  `db:"author_id"`
-		Text       string  `db:"text"`
-		Timestamp  string  `db:"timestamp"`
+		RoomID     *string `db:"room_id"`
+		AuthorID   *string `db:"author_id"`
+		Text       *string `db:"text"`
+		Timestamp  *string `db:"timestamp"`
 		RootID     *string `db:"root_id"`
 		ParentID   *string `db:"parent_id"`
-		Read       bool    `db:"read"`
-		Edited     bool    `db:"edited"`
-		Deleted    bool    `db:"deleted"`
+		Read       *bool   `db:"read"`
+		Edited     *bool   `db:"edited"`
+		Deleted    *bool   `db:"deleted"`
 	}
 
 	var f flatMsg
@@ -194,21 +201,27 @@ func (s *Store) GetMessage(ctx context.Context, id string) (*schema.Message, err
 		ID:         f.ID,
 		Platform:   f.Platform,
 		PlatformID: f.PlatformID,
-		Room: schema.Room{
-			ID: f.RoomID,
-		},
-		Author: schema.Author{
-			ID: f.AuthorID,
-		},
-		Content: schema.Content{
-			Text: f.Text,
-			Type: "text",
-		},
-		RootID:    f.RootID,
-		ParentID:  f.ParentID,
-		Read:      f.Read,
-		Edited:    f.Edited,
-		Deleted:   f.Deleted,
+		RootID:     f.RootID,
+		ParentID:   f.ParentID,
+	}
+	if f.Read != nil {
+		msg.Read = *f.Read
+	}
+	if f.Edited != nil {
+		msg.Edited = *f.Edited
+	}
+	if f.Deleted != nil {
+		msg.Deleted = *f.Deleted
+	}
+	if f.RoomID != nil {
+		msg.Room.ID = *f.RoomID
+	}
+	if f.AuthorID != nil {
+		msg.Author.ID = *f.AuthorID
+	}
+	if f.Text != nil {
+		msg.Content.Text = *f.Text
+		msg.Content.Type = "text"
 	}
 
 	return msg, nil

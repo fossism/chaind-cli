@@ -8,17 +8,20 @@ import (
 
 	"github.com/fossism/chaind-cli/internal/adapters"
 	"github.com/fossism/chaind-cli/internal/schema"
+	"github.com/fossism/chaind-cli/internal/store"
 )
 
 // AdapterRouter acts as the central registry dispatching messages from the IPC layer to the correct platform adapter.
 type AdapterRouter struct {
 	mu       sync.RWMutex
 	adapters map[string]adapters.Adapter
+	store    *store.Store
 }
 
-func NewAdapterRouter() *AdapterRouter {
+func NewAdapterRouter(st *store.Store) *AdapterRouter {
 	return &AdapterRouter{
 		adapters: make(map[string]adapters.Adapter),
+		store:    st,
 	}
 }
 
@@ -50,8 +53,11 @@ func (r *AdapterRouter) Send(platform, roomID, text string) (schema.Message, err
 	if err != nil {
 		return schema.Message{}, err
 	}
-	// Normalization and validation could occur here before handing off to the specific adapter
-	return adp.Send(roomID, text)
+	msg, err := adp.Send(roomID, text)
+	if err == nil {
+		r.store.PushMessage(msg)
+	}
+	return msg, err
 }
 
 // Global Reply Coordinator
@@ -60,7 +66,11 @@ func (r *AdapterRouter) Reply(platform, msgID, text string) (schema.Message, err
 	if err != nil {
 		return schema.Message{}, err
 	}
-	return adp.Reply(msgID, text)
+	msg, err := adp.Reply(msgID, text)
+	if err == nil {
+		r.store.PushMessage(msg)
+	}
+	return msg, err
 }
 
 // Global React Coordinator

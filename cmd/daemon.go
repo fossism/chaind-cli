@@ -31,7 +31,7 @@ var daemonCmd = &cobra.Command{
 
 		log.Info().Msg("Starting chaind daemon...")
 
-		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
 		defer stop()
 
 		// Initialize Database Store
@@ -42,7 +42,7 @@ var daemonCmd = &cobra.Command{
 		defer dbStore.Close()
 
 		// Initialize Adapter Router
-		router := daemon.NewAdapterRouter()
+		router := daemon.NewAdapterRouter(dbStore)
 
 		// Initialize IPC Server
 		ipcServer := ipc.NewIPCServer(dbStore, router)
