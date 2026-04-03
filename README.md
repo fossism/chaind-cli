@@ -1,3 +1,5 @@
+[![Watch the demo](https://img.youtube.com/vi/zMO8yXD-v0Q/maxresdefault.jpg)](https://youtu.be/zMO8yXD-v0Q)
+
 # chaind
 
 `chaind` is a sovereign data daemon that interfaces with your personal chat accounts (Telegram, Matrix, WhatsApp) and exposes them as a unified, local-first API over a secure Unix socket. 
