@@ -229,6 +229,10 @@ func parseChatID(roomID string) (int64, error) {
 }
 
 func (t *TelegramAdapter) Send(roomID, text string) (schema.Message, error) {
+	if t.client == nil {
+		return schema.Message{}, fmt.Errorf("telegram client not ready yet, try again shortly")
+	}
+
 	chatID, err := parseChatID(roomID)
 	if err != nil {
 		return schema.Message{}, fmt.Errorf("invalid telegram roomID: %w", err)
@@ -259,6 +263,10 @@ func (t *TelegramAdapter) Send(roomID, text string) (schema.Message, error) {
 }
 
 func (t *TelegramAdapter) Reply(msgID, text string) (schema.Message, error) {
+	if t.client == nil {
+		return schema.Message{}, fmt.Errorf("telegram client not ready yet, try again shortly")
+	}
+
 	// Need to fetch original message to get room/chat ID and platform message ID
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -304,6 +312,10 @@ func (t *TelegramAdapter) Reply(msgID, text string) (schema.Message, error) {
 }
 
 func (t *TelegramAdapter) React(msgID, emoji string) error {
+	if t.client == nil {
+		return fmt.Errorf("telegram client not ready yet, try again shortly")
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -338,6 +350,10 @@ func (t *TelegramAdapter) React(msgID, emoji string) error {
 }
 
 func (t *TelegramAdapter) Ban(roomID, userID, reason string) error {
+	if t.client == nil {
+		return fmt.Errorf("telegram client not ready yet, try again shortly")
+	}
+
 	chatID, err := parseChatID(roomID)
 	if err != nil {
 		return fmt.Errorf("invalid telegram roomID: %w", err)
@@ -358,6 +374,10 @@ func (t *TelegramAdapter) Ban(roomID, userID, reason string) error {
 }
 
 func (t *TelegramAdapter) Mute(roomID, userID string, d time.Duration) error {
+	if t.client == nil {
+		return fmt.Errorf("telegram client not ready yet, try again shortly")
+	}
+
 	chatID, err := parseChatID(roomID)
 	if err != nil {
 		return fmt.Errorf("invalid telegram roomID: %w", err)
@@ -404,6 +424,10 @@ func (t *TelegramAdapter) Mute(roomID, userID string, d time.Duration) error {
 }
 
 func (t *TelegramAdapter) DeleteMessage(msgID string) error {
+	if t.client == nil {
+		return fmt.Errorf("telegram client not ready yet, try again shortly")
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
