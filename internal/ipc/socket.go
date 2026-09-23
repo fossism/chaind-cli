@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
@@ -106,6 +105,7 @@ func (s *IPCServer) handleWatch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for msg := range ch {
+		ScrubMessage(r.Context(), &msg)
 		data, _ := json.Marshal(msg)
 		fmt.Fprintf(w, "data: %s\n\n", string(data))
 		flusher.Flush()
@@ -217,11 +217,27 @@ const tokenKey contextKey = "ipc_token"
 
 type scrubWriter struct {
 	http.ResponseWriter
-	buf *bytes.Buffer
+	buf    *bytes.Buffer
+	status int
+	header http.Header
 }
 
-func (rw *scrubWriter) Write(p []byte) (int, error) {
-	return rw.buf.Write(p)
+func newScrubWriter(w http.ResponseWriter) *scrubWriter {
+	return &scrubWriter{ResponseWriter: w, buf: &bytes.Buffer{}, status: http.StatusOK, header: make(http.Header)}
+}
+
+func (rw *scrubWriter) Header() http.Header         { return rw.header }
+func (rw *scrubWriter) WriteHeader(code int)        { rw.status = code }
+func (rw *scrubWriter) Write(p []byte) (int, error) { return rw.buf.Write(p) }
+
+func (rw *scrubWriter) flushTo(w http.ResponseWriter, ctx context.Context) {
+	for k, vv := range rw.header {
+		for _, v := range vv {
+			w.Header().Add(k, v)
+		}
+	}
+	w.WriteHeader(rw.status)
+	_, _ = w.Write(ScrubJSON(ctx, rw.buf.Bytes()))
 }
 
 func (s *IPCServer) requireToken(next http.HandlerFunc) http.HandlerFunc {
@@ -300,15 +316,9 @@ func (s *IPCServer) requireToken(next http.HandlerFunc) http.HandlerFunc {
 
 		if tok.PiiScrub != "" && r.Method == http.MethodGet {
 			if r.URL.Path == "/api/v1/messages/recent" || r.URL.Path == "/api/v1/messages/search" {
-				sw := &scrubWriter{ResponseWriter: w, buf: &bytes.Buffer{}}
+				sw := newScrubWriter(w)
 				next.ServeHTTP(sw, r.WithContext(ctx))
-
-				out := sw.buf.Bytes()
-				pattern, err := regexp.Compile(tok.PiiScrub)
-				if err == nil {
-					out = pattern.ReplaceAll(out, []byte("[REDACTED PII]"))
-				}
-				w.Write(out)
+				sw.flushTo(w, ctx)
 				return
 			}
 		}
