@@ -240,6 +240,44 @@ func (rw *scrubWriter) flushTo(w http.ResponseWriter, ctx context.Context) {
 	_, _ = w.Write(ScrubJSON(ctx, rw.buf.Bytes()))
 }
 
+// tokenAllowsRoom reports whether tok may act on room.
+// Tier 0 and "*" scopes bypass. Empty room never matches a scoped token.
+func tokenAllowsRoom(tok *store.Token, room string) bool {
+	if tok == nil {
+		return false
+	}
+	if tok.Tier == 0 || tok.Rooms == "*" {
+		return true
+	}
+	if room == "" {
+		return false
+	}
+	for _, ar := range strings.Split(tok.Rooms, ",") {
+		if strings.TrimSpace(ar) == room {
+			return true
+		}
+	}
+	return false
+}
+
+// tokenFromRequest returns the capability token bound by requireToken.
+func tokenFromRequest(r *http.Request) *store.Token {
+	tok, _ := r.Context().Value(tokenKey).(*store.Token)
+	return tok
+}
+
+// idBasedPath reports endpoints whose target room is resolved from a
+// stored message ID rather than a "room" field. These skip the coarse
+// wildcard gate in requireToken; handlers enforce per-message room scope.
+func idBasedPath(path string) bool {
+	switch path {
+	case "/api/v1/messages/reply", "/api/v1/messages/react", "/api/v1/messages/delete",
+		"/api/v1/queue/exec", "/api/v1/queue/deny":
+		return true
+	}
+	return false
+}
+
 func (s *IPCServer) requireToken(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tokenStr := r.Header.Get("Authorization")
@@ -287,8 +325,10 @@ func (s *IPCServer) requireToken(next http.HandlerFunc) http.HandlerFunc {
 			}
 		}
 
-		// Validate wildcard
-		if reqRoom == "*" || reqRoom == "" {
+		// ID-based endpoints resolve room from stored state in the handler.
+		if idBasedPath(r.URL.Path) {
+			// Still bind token below; per-message scope checked by handler.
+		} else if reqRoom == "*" || reqRoom == "" {
 			if tok.Tier != 0 {
 				http.Error(w, `{"error": "Forbidden: Tier 0 admin required for wildcard/global access"}`, http.StatusForbidden)
 				return
@@ -386,6 +426,17 @@ func (s *IPCServer) handleReply(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error":"invalid json"}`, http.StatusBadRequest)
 		return
 	}
+	if req.MsgID == "" || req.Text == "" {
+		http.Error(w, `{"error":"missing id or text"}`, http.StatusBadRequest)
+		return
+	}
+	if orig, err := s.store.GetMessage(r.Context(), req.MsgID); err != nil {
+		writeJSONError(w, http.StatusNotFound, err, "message not found")
+		return
+	} else if !tokenAllowsRoom(tokenFromRequest(r), orig.Room.ID) {
+		http.Error(w, `{"error": "Forbidden: Token lacks capability for this room"}`, http.StatusForbidden)
+		return
+	}
 
 	msg, err := s.router.Reply(req.Platform, req.MsgID, req.Text)
 	if err != nil {
@@ -414,6 +465,17 @@ func (s *IPCServer) handleReact(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error":"invalid json"}`, http.StatusBadRequest)
 		return
 	}
+	if req.MsgID == "" || req.Emoji == "" {
+		http.Error(w, `{"error":"missing id or emoji"}`, http.StatusBadRequest)
+		return
+	}
+	if orig, err := s.store.GetMessage(r.Context(), req.MsgID); err != nil {
+		writeJSONError(w, http.StatusNotFound, err, "message not found")
+		return
+	} else if !tokenAllowsRoom(tokenFromRequest(r), orig.Room.ID) {
+		http.Error(w, `{"error": "Forbidden: Token lacks capability for this room"}`, http.StatusForbidden)
+		return
+	}
 
 	err := s.router.React(req.Platform, req.MsgID, req.Emoji)
 	if err != nil {
@@ -439,6 +501,17 @@ func (s *IPCServer) handleDeleteMessage(w http.ResponseWriter, r *http.Request) 
 	var req deleteReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, `{"error":"invalid json"}`, http.StatusBadRequest)
+		return
+	}
+	if req.MsgID == "" {
+		http.Error(w, `{"error":"missing id"}`, http.StatusBadRequest)
+		return
+	}
+	if orig, err := s.store.GetMessage(r.Context(), req.MsgID); err != nil {
+		writeJSONError(w, http.StatusNotFound, err, "message not found")
+		return
+	} else if !tokenAllowsRoom(tokenFromRequest(r), orig.Room.ID) {
+		http.Error(w, `{"error": "Forbidden: Token lacks capability for this room"}`, http.StatusForbidden)
 		return
 	}
 
@@ -562,7 +635,14 @@ func (s *IPCServer) handleQueueExec(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req sendReq
-	json.Unmarshal([]byte(payloadStr), &req)
+	if err := json.Unmarshal([]byte(payloadStr), &req); err != nil {
+		writeJSONError(w, http.StatusInternalServerError, err, "corrupt queue payload")
+		return
+	}
+	if !tokenAllowsRoom(tokenFromRequest(r), req.RoomID) {
+		http.Error(w, `{"error": "Forbidden: Token lacks capability for this room"}`, http.StatusForbidden)
+		return
+	}
 
 	msg, err := s.router.Send(req.Platform, req.RoomID, req.Text)
 	if err != nil {
@@ -584,6 +664,16 @@ func (s *IPCServer) handleQueueDeny(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	if id == "" {
 		http.Error(w, `{"error":"Missing id parameter"}`, http.StatusBadRequest)
+		return
+	}
+
+	var qRoom string
+	if err := s.store.DB().GetContext(r.Context(), &qRoom, "SELECT room_id FROM approval_queue WHERE id = ?", id); err != nil {
+		http.Error(w, `{"error": "not found"}`, http.StatusNotFound)
+		return
+	}
+	if !tokenAllowsRoom(tokenFromRequest(r), qRoom) {
+		http.Error(w, `{"error": "Forbidden: Token lacks capability for this room"}`, http.StatusForbidden)
 		return
 	}
 
