@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -12,7 +13,6 @@ import (
 	"regexp"
 	"strings"
 	"time"
-	"io"
 
 	"github.com/fossism/chaind-cli/internal/daemon"
 	"github.com/fossism/chaind-cli/internal/schema"
@@ -30,7 +30,7 @@ type IPCServer struct {
 
 func NewIPCServer(store *store.Store, router *daemon.AdapterRouter) *IPCServer {
 	mux := http.NewServeMux()
-	
+
 	s := &IPCServer{
 		store:  store,
 		router: router,
@@ -58,7 +58,7 @@ func NewIPCServer(store *store.Store, router *daemon.AdapterRouter) *IPCServer {
 func (s *IPCServer) handleWatch(w http.ResponseWriter, r *http.Request) {
 	platform := r.URL.Query().Get("platform")
 	room := r.URL.Query().Get("room")
-	
+
 	var ch <-chan schema.Message
 	var err error
 
@@ -116,9 +116,9 @@ func (s *IPCServer) Start(ctx context.Context) error {
 	if err := os.MkdirAll(configDir, 0700); err != nil {
 		return fmt.Errorf("failed to create config directory %s: %w", configDir, err)
 	}
-	
+
 	sockPath := filepath.Join(configDir, "chaind.sock")
-	
+
 	// Remove dead socket if exists
 	if _, err := os.Stat(sockPath); err == nil {
 		os.Remove(sockPath)
@@ -195,6 +195,7 @@ func (s *IPCServer) handleGetStatus(w http.ResponseWriter, r *http.Request) {
 
 // requireToken is an interception middleware ensuring the request has a valid Capability Token.
 type contextKey string
+
 const tokenKey contextKey = "ipc_token"
 
 type scrubWriter struct {
@@ -227,9 +228,14 @@ func (s *IPCServer) requireToken(next http.HandlerFunc) http.HandlerFunc {
 			http.Error(w, `{"error": "Unauthorized: Invalid token metadata"}`, http.StatusUnauthorized)
 			return
 		}
-		
+
 		if tok.Revoked {
 			http.Error(w, `{"error": "Unauthorized: Token revoked"}`, http.StatusUnauthorized)
+			return
+		}
+
+		if tok.IsExpired(time.Now()) {
+			http.Error(w, `{"error": "Unauthorized: Token expired"}`, http.StatusUnauthorized)
 			return
 		}
 
@@ -279,7 +285,7 @@ func (s *IPCServer) requireToken(next http.HandlerFunc) http.HandlerFunc {
 			if r.URL.Path == "/api/v1/messages/recent" || r.URL.Path == "/api/v1/messages/search" {
 				sw := &scrubWriter{ResponseWriter: w, buf: &bytes.Buffer{}}
 				next.ServeHTTP(sw, r.WithContext(ctx))
-				
+
 				out := sw.buf.Bytes()
 				pattern, err := regexp.Compile(tok.PiiScrub)
 				if err == nil {
@@ -312,7 +318,7 @@ func (s *IPCServer) handleSendMessage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error":"invalid json"}`, http.StatusBadRequest)
 		return
 	}
-	
+
 	if req.RequireApproval {
 		payloadBytes, _ := json.Marshal(req)
 		id := "queue_" + time.Now().Format("20060102150405")
@@ -486,14 +492,14 @@ func (s *IPCServer) handleQueueList(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	
+
 	var items []map[string]interface{}
 	err := s.store.DB().SelectContext(r.Context(), &items, "SELECT id, action_type, platform, room_id, payload, created_at FROM approval_queue ORDER BY created_at ASC")
 	if err != nil {
 		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
 		return
 	}
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(items)
 }
@@ -503,7 +509,7 @@ func (s *IPCServer) handleQueueExec(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	
+
 	id := r.URL.Query().Get("id")
 	if id == "" {
 		http.Error(w, `{"error":"Missing id parameter"}`, http.StatusBadRequest)
@@ -525,7 +531,7 @@ func (s *IPCServer) handleQueueExec(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf(`{"error": "%s"}`, err.Error()), http.StatusInternalServerError)
 		return
 	}
-	
+
 	s.store.DB().ExecContext(r.Context(), "DELETE FROM approval_queue WHERE id = ?", id)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(msg)
@@ -536,13 +542,13 @@ func (s *IPCServer) handleQueueDeny(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	
+
 	id := r.URL.Query().Get("id")
 	if id == "" {
 		http.Error(w, `{"error":"Missing id parameter"}`, http.StatusBadRequest)
 		return
 	}
-	
+
 	res, err := s.store.DB().ExecContext(r.Context(), "DELETE FROM approval_queue WHERE id = ?", id)
 	if err != nil {
 		http.Error(w, `{"error": "`+err.Error()+`"}`, http.StatusInternalServerError)

@@ -2,8 +2,11 @@ package store
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"fmt"
+	"time"
 
 	"github.com/fossism/chaind-cli/internal/schema"
 )
@@ -16,7 +19,7 @@ func (s *Store) GetRecentMessages(ctx context.Context, limit int) ([]schema.Mess
 		ORDER BY id DESC -- relies on ULID lexicographical sorting instead of timestamp index overhead
 		LIMIT ?
 	`
-	
+
 	type flatMsg struct {
 		ID         string  `db:"id"`
 		Platform   string  `db:"platform"`
@@ -83,19 +86,72 @@ type Token struct {
 	Revoked  bool   `db:"revoked"`
 }
 
+// HashToken returns the SHA256 hex digest stored in the DB.
+// Raw secrets are never persisted; only the hash is used as lookup key.
+func HashToken(raw string) string {
+	sum := sha256.Sum256([]byte(raw))
+	return hex.EncodeToString(sum[:])
+}
+
+func isHashedName(s string) bool {
+	if len(s) != 64 {
+		return false
+	}
+	for _, c := range s {
+		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')) {
+			return false
+		}
+	}
+	return true
+}
+
+// IsExpired reports whether the token past its Expires timestamp.
+// Empty or unparsable Expires means non-expiring (legacy rows).
+func (t *Token) IsExpired(now time.Time) bool {
+	if t == nil || t.Expires == "" {
+		return false
+	}
+	exp, err := time.Parse(time.RFC3339, t.Expires)
+	if err != nil {
+		return false
+	}
+	return now.After(exp)
+}
+
 // GetToken validates and retrieves an IPC capability token from the authoritative SQLite registry.
+// Input is the raw bearer secret; it is hashed before lookup.
+// Legacy plaintext rows are still honored as fallback for migration.
 func (s *Store) GetToken(ctx context.Context, name string) (*Token, error) {
 	query := `SELECT name, tier, rooms, pii_scrub, expires, revoked FROM tokens WHERE name = ?`
 	var t Token
 	// Use read pool
-	err := s.db.GetContext(ctx, &t, query, name)
+	hashed := name
+	if !isHashedName(name) {
+		hashed = HashToken(name)
+	}
+	if err := s.db.GetContext(ctx, &t, query, hashed); err == nil {
+		return &t, nil
+	} else if hashed != name {
+		// Fallback for pre-hash rows created before hashed storage.
+		if err2 := s.db.GetContext(ctx, &t, query, name); err2 == nil {
+			return &t, nil
+		}
+	}
+	// Preserve original not-found error semantics for unknown tokens.
+	var t2 Token
+	err := s.db.GetContext(ctx, &t2, query, hashed)
 	if err != nil {
 		return nil, err
 	}
-	return &t, nil
+	return &t2, nil
 }
 
 func (s *Store) SaveToken(ctx context.Context, t Token) error {
+	// Never persist raw bearer secrets: hash plaintext names on write.
+	// Already-hashed (64 hex) values pass through for idempotent updates.
+	if !isHashedName(t.Name) {
+		t.Name = HashToken(t.Name)
+	}
 	query := `
 		INSERT INTO tokens (name, tier, rooms, pii_scrub, expires, revoked) 
 		VALUES (?, ?, ?, ?, ?, ?)
@@ -172,7 +228,7 @@ func (s *Store) GetMessage(ctx context.Context, id string) (*schema.Message, err
 		FROM messages
 		WHERE id = ? LIMIT 1
 	`
-	
+
 	type flatMsg struct {
 		ID         string  `db:"id"`
 		Platform   string  `db:"platform"`

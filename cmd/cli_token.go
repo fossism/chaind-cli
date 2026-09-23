@@ -5,6 +5,9 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/fossism/chaind-cli/internal/store"
@@ -36,11 +39,6 @@ var tokenIssueCmd = &cobra.Command{
 		}
 		token := hex.EncodeToString(tokenBytes)
 
-		name := tokName
-		if name == "" {
-			name = token[:8] // use prefix as default name if not provided
-		}
-
 		tier := 2
 		if tokRole == "owner" {
 			tier = 0
@@ -56,11 +54,11 @@ var tokenIssueCmd = &cobra.Command{
 		defer st.Close()
 
 		t := store.Token{
-			Name:     token,
+			Name:     store.HashToken(token),
 			Tier:     tier,
 			Rooms:    tokScopes,
 			PiiScrub: tokPii,
-			Expires:  time.Now().Add(365 * 24 * time.Hour).Format(time.RFC3339), // default 1 year
+			Expires:  parseTokenExpiry(tokExpires),
 			Revoked:  false,
 		}
 
@@ -69,10 +67,29 @@ var tokenIssueCmd = &cobra.Command{
 			return
 		}
 
+		if tokName != "" {
+			fmt.Fprintf(os.Stderr, "Issued token %q (hash %.8s...)\n", tokName, t.Name)
+		}
 		// Print only the raw token so it can be captured by shell scripts:
 		// export CHAIND_TOKEN=$(./chaind token issue --role owner)
 		fmt.Print(token)
 	},
+}
+
+// parseTokenExpiry honors --expires (e.g. 30d, 24h, 720h). Falls back to 30d.
+func parseTokenExpiry(s string) string {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		s = "30d"
+	}
+	if strings.HasSuffix(s, "d") {
+		if n, err := strconv.Atoi(strings.TrimSuffix(s, "d")); err == nil && n > 0 && n <= 3650 {
+			return time.Now().Add(time.Duration(n) * 24 * time.Hour).Format(time.RFC3339)
+		}
+	} else if d, err := time.ParseDuration(s); err == nil && d > 0 && d <= 10*365*24*time.Hour {
+		return time.Now().Add(d).Format(time.RFC3339)
+	}
+	return time.Now().Add(30 * 24 * time.Hour).Format(time.RFC3339)
 }
 
 var tokenListCmd = &cobra.Command{
