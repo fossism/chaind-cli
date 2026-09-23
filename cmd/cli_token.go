@@ -115,7 +115,10 @@ var tokenListCmd = &cobra.Command{
 			if t.Revoked {
 				status = "revoked"
 			}
-			fmt.Printf("  %s... (Tier: %d, Scopes: %s, Status: %s)\n", t.Name[:8], t.Tier, t.Rooms, status)
+			if t.IsExpired(time.Now()) {
+				status += ", expired"
+			}
+			fmt.Printf("  %s... (Tier: %d, Scopes: %s, Status: %s)\n", shortHash(t.Name), t.Tier, t.Rooms, status)
 		}
 	},
 }
@@ -125,7 +128,11 @@ var tokenRevokeCmd = &cobra.Command{
 	Short: "Revoke a token",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		prefix := args[0]
+		prefix := strings.TrimSpace(args[0])
+		if prefix == "" {
+			fmt.Println("Token prefix must not be empty")
+			return
+		}
 		st, err := store.NewStore()
 		if err != nil {
 			fmt.Printf("Failed to open store: %v\n", err)
@@ -134,18 +141,42 @@ var tokenRevokeCmd = &cobra.Command{
 		defer st.Close()
 
 		tokens, _ := st.ListTokens(context.Background())
+		// Accept hash prefix, full hash, legacy name, or raw secret.
+		rawHash := store.HashToken(prefix)
 		for _, t := range tokens {
-			if t.Name == prefix || (len(prefix) >= 8 && t.Name[:len(prefix)] == prefix) {
+			if t.Name == prefix || t.Name == rawHash ||
+				(len(prefix) >= 8 && strings.HasPrefix(t.Name, prefix)) {
 				if err := st.RevokeToken(context.Background(), t.Name); err != nil {
-					fmt.Printf("Failed to revoke %s: %v\n", t.Name, err)
+					fmt.Printf("Failed to revoke %s: %v\n", shortHash(t.Name), err)
 				} else {
-					fmt.Printf("Revoked token: %s\n", t.Name)
+					fmt.Printf("Revoked token: %s...\n", shortHash(t.Name))
 				}
 				return
 			}
 		}
 		fmt.Printf("Token not found: %s\n", prefix)
 	},
+}
+
+// shortHash safely truncates a stored hash for display.
+func shortHash(s string) string {
+	if len(s) > 8 {
+		return s[:8]
+	}
+	return s
+}
+
+// isHashPrefix reports whether s is already a hex prefix of a stored hash.
+func isHashPrefix(s string) bool {
+	if len(s) < 8 || len(s) > 64 {
+		return false
+	}
+	for _, c := range s {
+		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')) {
+			return false
+		}
+	}
+	return true
 }
 
 func init() {
