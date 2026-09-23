@@ -17,6 +17,7 @@ import (
 	"github.com/fossism/chaind-cli/internal/schema"
 	"github.com/fossism/chaind-cli/internal/search"
 	"github.com/fossism/chaind-cli/internal/store"
+	"github.com/oklog/ulid/v2"
 	"github.com/rs/zerolog/log"
 )
 
@@ -367,6 +368,23 @@ func (s *IPCServer) requireToken(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+// validateSendReq bounds platform/room/text to prevent DB bloat,
+// oversized upstream rejects, and WhatsApp bans from runaway agents.
+func validateSendReq(req sendReq) error {
+	switch req.Platform {
+	case "matrix", "telegram", "whatsapp":
+	default:
+		return fmt.Errorf("unsupported platform")
+	}
+	if strings.TrimSpace(req.RoomID) == "" || len(req.RoomID) > 200 {
+		return fmt.Errorf("invalid room")
+	}
+	if strings.TrimSpace(req.Text) == "" || len(req.Text) > 4000 {
+		return fmt.Errorf("invalid text: must be 1..4000 chars")
+	}
+	return nil
+}
+
 type sendReq struct {
 	Platform        string `json:"platform"`
 	RoomID          string `json:"room"`
@@ -385,10 +403,14 @@ func (s *IPCServer) handleSendMessage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error":"invalid json"}`, http.StatusBadRequest)
 		return
 	}
+	if err := validateSendReq(req); err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
+		return
+	}
 
 	if req.RequireApproval {
 		payloadBytes, _ := json.Marshal(req)
-		id := "queue_" + time.Now().Format("20060102150405")
+		id := "queue_" + ulid.Make().String()
 		_, err := s.store.DB().ExecContext(r.Context(), "INSERT INTO approval_queue (id, action_type, platform, room_id, payload, created_at) VALUES (?, ?, ?, ?, ?, datetime('now'))", id, "send", req.Platform, req.RoomID, string(payloadBytes))
 		if err != nil {
 			http.Error(w, `{"error": "Failed to enqueue"}`, http.StatusInternalServerError)
