@@ -134,32 +134,128 @@ func waBroadcastKeys(chat types.JID) []string {
 	return keys
 }
 
+// extractWAContent maps the common WhatsApp payloads to display text plus
+// attachment metadata. Previously only conversation/image/document were
+// covered, so voice notes, videos, stickers, locations, contacts, polls,
+// and button/list replies were silently dropped ("not fetching").
+func extractWAContent(m *waE2E.Message) (string, []schema.Attachment) {
+	if m == nil {
+		return "", nil
+	}
+	if s := m.GetConversation(); s != "" {
+		return s, nil
+	}
+	if ext := m.GetExtendedTextMessage(); ext != nil {
+		return ext.GetText(), nil
+	}
+	var atts []schema.Attachment
+	if img := m.GetImageMessage(); img != nil {
+		return img.GetCaption(), []schema.Attachment{{
+			URI:      "whatsapp-image",
+			MimeType: img.GetMimetype(),
+			Size:     int64(img.GetFileLength()),
+		}}
+	}
+	if doc := m.GetDocumentMessage(); doc != nil {
+		return doc.GetCaption(), []schema.Attachment{{
+			URI:      "whatsapp-document",
+			MimeType: doc.GetMimetype(),
+			Size:     int64(doc.GetFileLength()),
+			Filename: doc.GetTitle(),
+		}}
+	}
+	if vid := m.GetVideoMessage(); vid != nil {
+		caption := vid.GetCaption()
+		if vid.GetGifPlayback() && caption == "" {
+			caption = "[gif]"
+		}
+		return caption, []schema.Attachment{{
+			URI:      "whatsapp-video",
+			MimeType: vid.GetMimetype(),
+			Size:     int64(vid.GetFileLength()),
+		}}
+	}
+	if aud := m.GetAudioMessage(); aud != nil {
+		label := "[audio]"
+		if aud.GetPTT() {
+			label = "[voice note]"
+		}
+		return label, []schema.Attachment{{
+			URI:      "whatsapp-audio",
+			MimeType: aud.GetMimetype(),
+			Size:     int64(aud.GetFileLength()),
+		}}
+	}
+	if st := m.GetStickerMessage(); st != nil {
+		return "[sticker]", []schema.Attachment{{
+			URI:      "whatsapp-sticker",
+			MimeType: st.GetMimetype(),
+			Size:     int64(st.GetFileLength()),
+		}}
+	}
+	if loc := m.GetLocationMessage(); loc != nil {
+		name := loc.GetName()
+		if name == "" {
+			name = loc.GetAddress()
+		}
+		text := fmt.Sprintf("[location %.5f,%.5f %s]", loc.GetDegreesLatitude(), loc.GetDegreesLongitude(), strings.TrimSpace(name))
+		return strings.TrimSpace(text), nil
+	}
+	if loc := m.GetLiveLocationMessage(); loc != nil {
+		text := fmt.Sprintf("[live location %.5f,%.5f %s]", loc.GetDegreesLatitude(), loc.GetDegreesLongitude(), strings.TrimSpace(loc.GetCaption()))
+		return strings.TrimSpace(text), nil
+	}
+	if c := m.GetContactMessage(); c != nil {
+		name := c.GetDisplayName()
+		if name == "" {
+			name = "contact"
+		}
+		return fmt.Sprintf("[contact %s]", name), nil
+	}
+	if poll := m.GetPollCreationMessage(); poll != nil {
+		var opts []string
+		for _, o := range poll.GetOptions() {
+			if o == nil {
+				continue
+			}
+			if n := o.GetOptionName(); n != "" {
+				opts = append(opts, n)
+			}
+		}
+		text := "[poll " + strings.TrimSpace(poll.GetName())
+		if len(opts) > 0 {
+			text += ": " + strings.Join(opts, ", ")
+		}
+		return text + "]", nil
+	}
+	if br := m.GetButtonsResponseMessage(); br != nil {
+		if t := br.GetSelectedDisplayText(); t != "" {
+			return t, nil
+		}
+		return "[button " + br.GetSelectedButtonID() + "]", nil
+	}
+	if lr := m.GetListResponseMessage(); lr != nil {
+		if t := lr.GetTitle(); t != "" {
+			return t, nil
+		}
+		if d := lr.GetDescription(); d != "" {
+			return d, nil
+		}
+		return "[list reply]", nil
+	}
+	_ = atts
+	return "", nil
+}
+
 func (w *WhatsAppAdapter) handleEvent(rawEvt interface{}) {
 	switch evt := rawEvt.(type) {
 	case *events.Message:
-		text := evt.Message.GetConversation()
-		if text == "" && evt.Message.GetExtendedTextMessage() != nil {
-			text = evt.Message.GetExtendedTextMessage().GetText()
+		// Protocol messages (history sync, revoke, edit shells) carry no
+		// user content; the unwrapped evt.Message holds the real payload.
+		if evt.Message.GetProtocolMessage() != nil {
+			return
 		}
-
-		var attachments []schema.Attachment
-		if img := evt.Message.GetImageMessage(); img != nil {
-			text = img.GetCaption()
-			attachments = append(attachments, schema.Attachment{
-				URI:      "whatsapp-image", // pending active download layer
-				MimeType: img.GetMimetype(),
-				Size:     int64(img.GetFileLength()),
-			})
-		}
-		if doc := evt.Message.GetDocumentMessage(); doc != nil {
-			text = doc.GetCaption()
-			attachments = append(attachments, schema.Attachment{
-				URI:      "whatsapp-document", // pending active download layer
-				MimeType: doc.GetMimetype(),
-				Size:     int64(doc.GetFileLength()),
-				Filename: doc.GetTitle(),
-			})
-		}
+		text, attachments := extractWAContent(evt.Message)
 
 		if text == "" && len(attachments) == 0 {
 			return
@@ -185,6 +281,7 @@ func (w *WhatsAppAdapter) handleEvent(rawEvt interface{}) {
 			ID:            ulid.Make().String(),
 			Platform:      "whatsapp",
 			PlatformID:    evt.Info.ID,
+			Edited:        evt.IsEdit,
 			Room:          schema.Room{ID: roomID},
 			Author:        schema.Author{ID: authorID, DisplayName: evt.Info.PushName},
 			Content:       schema.Content{Type: "text", Text: text, Attachments: attachments},
