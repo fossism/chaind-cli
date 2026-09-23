@@ -22,7 +22,7 @@ COPY --from=builder /chaind /usr/local/bin/chaind
 
 # Health check — ping the daemon status endpoint
 HEALTHCHECK --interval=30s --timeout=5s \
-  CMD wget -qO- http://localhost:7432/api/v1/adapters/status || exit 1
+  CMD wget -qO- http://127.0.0.1:7432/healthz || exit 1
 
 # Environment — HTTP mirror is enabled by default in containers since Unix sockets
 # can't easily traverse Docker network boundaries.

@@ -18,7 +18,7 @@ func getConfigFile() string {
 		configDir = filepath.Join(home, ".config")
 	}
 	chaindConfigDir := filepath.Join(configDir, "chaind")
-	os.MkdirAll(chaindConfigDir, 0755)
+	os.MkdirAll(chaindConfigDir, 0700)
 	return filepath.Join(chaindConfigDir, "config.json")
 }
 

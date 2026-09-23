@@ -2,12 +2,12 @@ package cmd
 
 import (
 	"context"
+	"errors"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
-	"net/http"
-	"errors"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -86,12 +86,15 @@ var daemonCmd = &cobra.Command{
 
 		// Initialize Telegram Adapter
 		tgApiID := os.Getenv("CHAIND_TELEGRAM_API_ID")
-		if tgApiID == "" {
-			tgApiID = "6" // Telegram Android API ID
-		}
 		tgApiHash := os.Getenv("CHAIND_TELEGRAM_API_HASH")
-		if tgApiHash == "" {
-			tgApiHash = "eb06d4abfb49dc3eeb1aeb98ae0f581e" // Telegram Android Hash
+		if tgApiID == "" || tgApiHash == "" {
+			log.Warn().Msg("CHAIND_TELEGRAM_API_ID/HASH not set; using public fallback credentials. Register your own at https://my.telegram.org")
+			if tgApiID == "" {
+				tgApiID = "6" // Telegram Android API ID (public fallback)
+			}
+			if tgApiHash == "" {
+				tgApiHash = "eb06d4abfb49dc3eeb1aeb98ae0f581e" // Telegram Android Hash (public fallback)
+			}
 		}
 		tgToken, authErr := auth.GetCredential("telegram")
 		if authErr == nil {

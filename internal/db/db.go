@@ -20,7 +20,7 @@ func InitDB() (*gorm.DB, error) {
 		configDir = filepath.Join(home, ".config")
 	}
 	chaindConfigDir := filepath.Join(configDir, "chaind")
-	os.MkdirAll(chaindConfigDir, 0755)
+	os.MkdirAll(chaindConfigDir, 0700)
 
 	dbPath := filepath.Join(chaindConfigDir, "chaind.db")
 	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{

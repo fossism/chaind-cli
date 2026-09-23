@@ -67,9 +67,17 @@ func NewIPCServer(store *store.Store, router *daemon.AdapterRouter) *IPCServer {
 	mux.HandleFunc("/api/v1/queue", s.requireToken(s.handleQueueList))
 	mux.HandleFunc("/api/v1/queue/exec", s.requireToken(s.handleQueueExec))
 	mux.HandleFunc("/api/v1/queue/deny", s.requireToken(s.handleQueueDeny))
+	mux.HandleFunc("/healthz", s.handleHealthz)
 
 	s.server = &http.Server{Handler: mux}
 	return s
+}
+
+// handleHealthz is an unauthenticated liveness probe (no message data).
+// The authenticated /api/v1/adapters/status endpoint remains the source of truth.
+func (s *IPCServer) handleHealthz(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 }
 
 func (s *IPCServer) handleWatch(w http.ResponseWriter, r *http.Request) {
@@ -137,8 +145,12 @@ func (s *IPCServer) Start(ctx context.Context) error {
 
 	sockPath := filepath.Join(configDir, "chaind.sock")
 
-	// Remove dead socket if exists
+	// Only remove a stale socket; refuse to kill a live daemon.
 	if _, err := os.Stat(sockPath); err == nil {
+		if conn, dialErr := net.DialTimeout("unix", sockPath, time.Second); dialErr == nil {
+			conn.Close()
+			return fmt.Errorf("daemon already running (socket %s is live)", sockPath)
+		}
 		os.Remove(sockPath)
 	}
 
@@ -153,14 +165,22 @@ func (s *IPCServer) Start(ctx context.Context) error {
 
 	log.Info().Str("socket", sockPath).Msg("IPC Unix Socket API active and listening")
 
-	// Setup HTTP listener if Docker/prefer_http is requested
+	// Setup HTTP listener if Docker/prefer_http is requested.
+	// Binds loopback by default; set CHAIND_HTTP_BIND=0.0.0.0 only behind TLS/auth proxy.
 	if os.Getenv("CHAIND_PREFER_HTTP") == "true" {
 		go func() {
 			httpPort := os.Getenv("CHAIND_HTTP_PORT")
 			if httpPort == "" {
 				httpPort = "7432"
 			}
-			addr := ":" + httpPort
+			httpBind := os.Getenv("CHAIND_HTTP_BIND")
+			if httpBind == "" {
+				httpBind = "127.0.0.1"
+			}
+			if httpBind == "0.0.0.0" || httpBind == "::" {
+				log.Warn().Msg("HTTP IPC bound to all interfaces without TLS: bearer tokens cross network in cleartext")
+			}
+			addr := net.JoinHostPort(httpBind, httpPort)
 			log.Info().Str("addr", addr).Msg("HTTP IPC API mirror active")
 			if err := http.ListenAndServe(addr, s.server.Handler); err != nil && err != http.ErrServerClosed {
 				log.Error().Err(err).Msg("HTTP IPC stopped")
