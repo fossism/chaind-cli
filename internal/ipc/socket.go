@@ -28,6 +28,23 @@ type IPCServer struct {
 	server *http.Server
 }
 
+// writeJSONError emits a safely-escaped JSON error without leaking
+// internal details into broken JSON. Full errors stay server-side in logs.
+func writeJSONError(w http.ResponseWriter, code int, err error, public string) {
+	if err != nil {
+		log.Debug().Err(err).Int("code", code).Msg("IPC request failed")
+	}
+	if public == "" && err != nil {
+		public = "internal error"
+	}
+	if public == "" {
+		public = "request failed"
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	_ = json.NewEncoder(w).Encode(map[string]string{"error": public})
+}
+
 func NewIPCServer(store *store.Store, router *daemon.AdapterRouter) *IPCServer {
 	mux := http.NewServeMux()
 
@@ -67,14 +84,14 @@ func (s *IPCServer) handleWatch(w http.ResponseWriter, r *http.Request) {
 	} else {
 		adp, errGet := s.router.Get(platform)
 		if errGet != nil {
-			http.Error(w, errGet.Error(), http.StatusBadRequest)
+			writeJSONError(w, http.StatusBadRequest, errGet, "unknown platform")
 			return
 		}
 		ch, err = adp.Watch(r.Context(), room)
 	}
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, err, "watch failed")
 		return
 	}
 
@@ -172,7 +189,7 @@ func (s *IPCServer) handleGetRecentMessages(w http.ResponseWriter, r *http.Reque
 
 	msgs, err := s.store.GetRecentMessages(r.Context(), 50)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, err, "failed to read messages")
 		return
 	}
 
@@ -334,7 +351,7 @@ func (s *IPCServer) handleSendMessage(w http.ResponseWriter, r *http.Request) {
 
 	msg, err := s.router.Send(req.Platform, req.RoomID, req.Text)
 	if err != nil {
-		http.Error(w, fmt.Sprintf(`{"error": "%s"}`, err.Error()), http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, err, "send failed")
 		return
 	}
 
@@ -362,7 +379,7 @@ func (s *IPCServer) handleReply(w http.ResponseWriter, r *http.Request) {
 
 	msg, err := s.router.Reply(req.Platform, req.MsgID, req.Text)
 	if err != nil {
-		http.Error(w, fmt.Sprintf(`{"error": "%s"}`, err.Error()), http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, err, "reply failed")
 		return
 	}
 
@@ -390,7 +407,7 @@ func (s *IPCServer) handleReact(w http.ResponseWriter, r *http.Request) {
 
 	err := s.router.React(req.Platform, req.MsgID, req.Emoji)
 	if err != nil {
-		http.Error(w, fmt.Sprintf(`{"error": "%s"}`, err.Error()), http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, err, "react failed")
 		return
 	}
 
@@ -417,7 +434,7 @@ func (s *IPCServer) handleDeleteMessage(w http.ResponseWriter, r *http.Request) 
 
 	err := s.router.DeleteMessage(req.Platform, req.MsgID)
 	if err != nil {
-		http.Error(w, fmt.Sprintf(`{"error": "%s"}`, err.Error()), http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, err, "delete failed")
 		return
 	}
 
@@ -446,7 +463,7 @@ func (s *IPCServer) handleModerate(w http.ResponseWriter, r *http.Request) {
 
 	err := s.router.Ban(req.Platform, req.RoomID, req.UserID, req.Reason)
 	if err != nil {
-		http.Error(w, fmt.Sprintf(`{"error": "%s"}`, err.Error()), http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, err, "moderation failed")
 		return
 	}
 
@@ -472,14 +489,25 @@ func (s *IPCServer) handleSearch(w http.ResponseWriter, r *http.Request) {
 	limitStr := r.URL.Query().Get("limit")
 	limit := 20
 	if limitStr != "" {
-		fmt.Sscanf(limitStr, "%d", &limit)
+		if n, err := fmt.Sscanf(limitStr, "%d", &limit); n != 1 || err != nil {
+			limit = 20
+		}
+	}
+	if limit < 1 {
+		limit = 1
+	}
+	if limit > 100 {
+		limit = 100
+	}
+	if len(query) > 200 {
+		query = query[:200]
 	}
 
 	since := r.URL.Query().Get("since")
 
 	msgs, err := s.search.Search(r.Context(), query, limit, since)
 	if err != nil {
-		http.Error(w, fmt.Sprintf(`{"error":"%s"}`, err.Error()), http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, err, "search failed")
 		return
 	}
 
@@ -496,7 +524,7 @@ func (s *IPCServer) handleQueueList(w http.ResponseWriter, r *http.Request) {
 	var items []map[string]interface{}
 	err := s.store.DB().SelectContext(r.Context(), &items, "SELECT id, action_type, platform, room_id, payload, created_at FROM approval_queue ORDER BY created_at ASC")
 	if err != nil {
-		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, err, "failed to list queue")
 		return
 	}
 
@@ -528,7 +556,7 @@ func (s *IPCServer) handleQueueExec(w http.ResponseWriter, r *http.Request) {
 
 	msg, err := s.router.Send(req.Platform, req.RoomID, req.Text)
 	if err != nil {
-		http.Error(w, fmt.Sprintf(`{"error": "%s"}`, err.Error()), http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, err, "queued send failed")
 		return
 	}
 
@@ -551,7 +579,7 @@ func (s *IPCServer) handleQueueDeny(w http.ResponseWriter, r *http.Request) {
 
 	res, err := s.store.DB().ExecContext(r.Context(), "DELETE FROM approval_queue WHERE id = ?", id)
 	if err != nil {
-		http.Error(w, `{"error": "`+err.Error()+`"}`, http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, err, "failed to deny request")
 		return
 	}
 
