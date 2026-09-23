@@ -138,7 +138,7 @@ func waBroadcastKeys(chat types.JID) []string {
 // attachment metadata. Previously only conversation/image/document were
 // covered, so voice notes, videos, stickers, locations, contacts, polls,
 // and button/list replies were silently dropped ("not fetching").
-func extractWAContent(m *waE2E.Message) (string, []schema.Attachment) {
+func extractWAContent(msgID string, m *waE2E.Message) (string, []schema.Attachment) {
 	if m == nil {
 		return "", nil
 	}
@@ -151,14 +151,14 @@ func extractWAContent(m *waE2E.Message) (string, []schema.Attachment) {
 	var atts []schema.Attachment
 	if img := m.GetImageMessage(); img != nil {
 		return img.GetCaption(), []schema.Attachment{{
-			URI:      "whatsapp-image",
+			URI:      "whatsapp-image:" + msgID,
 			MimeType: img.GetMimetype(),
 			Size:     int64(img.GetFileLength()),
 		}}
 	}
 	if doc := m.GetDocumentMessage(); doc != nil {
 		return doc.GetCaption(), []schema.Attachment{{
-			URI:      "whatsapp-document",
+			URI:      "whatsapp-document:" + msgID,
 			MimeType: doc.GetMimetype(),
 			Size:     int64(doc.GetFileLength()),
 			Filename: doc.GetTitle(),
@@ -170,7 +170,7 @@ func extractWAContent(m *waE2E.Message) (string, []schema.Attachment) {
 			caption = "[gif]"
 		}
 		return caption, []schema.Attachment{{
-			URI:      "whatsapp-video",
+			URI:      "whatsapp-video:" + msgID,
 			MimeType: vid.GetMimetype(),
 			Size:     int64(vid.GetFileLength()),
 		}}
@@ -181,14 +181,14 @@ func extractWAContent(m *waE2E.Message) (string, []schema.Attachment) {
 			label = "[voice note]"
 		}
 		return label, []schema.Attachment{{
-			URI:      "whatsapp-audio",
+			URI:      "whatsapp-audio:" + msgID,
 			MimeType: aud.GetMimetype(),
 			Size:     int64(aud.GetFileLength()),
 		}}
 	}
 	if st := m.GetStickerMessage(); st != nil {
 		return "[sticker]", []schema.Attachment{{
-			URI:      "whatsapp-sticker",
+			URI:      "whatsapp-sticker:" + msgID,
 			MimeType: st.GetMimetype(),
 			Size:     int64(st.GetFileLength()),
 		}}
@@ -255,7 +255,7 @@ func (w *WhatsAppAdapter) handleEvent(rawEvt interface{}) {
 		if evt.Message.GetProtocolMessage() != nil {
 			return
 		}
-		text, attachments := extractWAContent(evt.Message)
+		text, attachments := extractWAContent(evt.Info.ID, evt.Message)
 
 		if text == "" && len(attachments) == 0 {
 			return
@@ -306,6 +306,18 @@ func (w *WhatsAppAdapter) handleEvent(rawEvt interface{}) {
 			default:
 			}
 		}
+	case *events.Connected:
+		log.Info().Msg("WhatsApp connected")
+	case *events.Disconnected:
+		log.Warn().Msg("WhatsApp disconnected; supervise loop will reconnect")
+	case *events.LoggedOut:
+		log.Error().Msg("WhatsApp logged out: delete whatsapp.db and re-scan QR via daemon")
+	case *events.HistorySync:
+		n := 0
+		if evt.Data != nil {
+			n = len(evt.Data.GetConversations())
+		}
+		log.Info().Int("conversations", n).Msg("WhatsApp history sync received")
 	}
 }
 
@@ -315,7 +327,7 @@ func (w *WhatsAppAdapter) Disconnect() error {
 }
 
 func (w *WhatsAppAdapter) ReadHistory(roomID string, limit int, since time.Time) ([]schema.Message, error) {
-	return nil, fmt.Errorf("not supported on whatsapp natively")
+	return nil, fmt.Errorf("whatsapp has no server-side history API: showing locally synced messages only (daemon must be online to capture live events; use read/watch)")
 }
 
 func (w *WhatsAppAdapter) Watch(ctx context.Context, roomID string) (<-chan schema.Message, error) {
