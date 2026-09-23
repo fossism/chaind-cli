@@ -24,6 +24,8 @@ var lsCmd = &cobra.Command{
 
 		if lsToken != "" {
 			req.Header.Set("Authorization", "Bearer "+lsToken)
+		} else if tok := os.Getenv("CHAIND_TOKEN"); tok != "" {
+			req.Header.Set("Authorization", "Bearer "+tok)
 		}
 
 		// Dial via the HTTP Host standard using shared client
@@ -34,7 +36,7 @@ var lsCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		defer resp.Body.Close()
-		
+
 		if resp.StatusCode != http.StatusOK {
 			body, _ := io.ReadAll(resp.Body)
 			fmt.Printf("IPC Request Failed (HTTP %d): %s\n", resp.StatusCode, string(body))

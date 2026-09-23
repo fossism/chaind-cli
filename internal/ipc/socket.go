@@ -302,9 +302,9 @@ func idBasedPath(path string) bool {
 func (s *IPCServer) requireToken(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tokenStr := r.Header.Get("Authorization")
-		if tokenStr == "" {
-			tokenStr = os.Getenv("CHAIND_TOKEN")
-		}
+		// NOTE: no server-side env fallback here. The daemon must never
+		// authenticate a request with its own CHAIND_TOKEN env var, or
+		// header-less clients would ride in as the operator.
 
 		if len(tokenStr) > 7 && tokenStr[:7] == "Bearer " {
 			tokenStr = tokenStr[7:]
