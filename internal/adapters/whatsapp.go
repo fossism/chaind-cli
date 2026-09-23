@@ -13,24 +13,25 @@ import (
 	"github.com/fossism/chaind-cli/internal/store"
 	"github.com/oklog/ulid/v2"
 	"github.com/rs/zerolog/log"
-	
+
 	"google.golang.org/protobuf/proto"
 
 	_ "github.com/glebarez/go-sqlite"
 	"github.com/mdp/qrterminal/v3"
 	"go.mau.fi/whatsmeow"
+	"go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/store/sqlstore"
 	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
-	"go.mau.fi/whatsmeow/proto/waE2E"
 	waLog "go.mau.fi/whatsmeow/util/log"
 )
 
 type WhatsAppAdapter struct {
-	client   *whatsmeow.Client
-	store    *store.Store
-	mu       sync.RWMutex
-	watchers map[string][]chan schema.Message
+	client      *whatsmeow.Client
+	store       *store.Store
+	mu          sync.RWMutex
+	watchers    map[string][]chan schema.Message
+	handlerOnce sync.Once
 }
 
 func NewWhatsAppAdapter(st *store.Store, enabled, acceptedRisk bool) (*WhatsAppAdapter, error) {
@@ -70,8 +71,10 @@ func (w *WhatsAppAdapter) Platform() string {
 func (w *WhatsAppAdapter) Start(ctx context.Context) error {
 	log.Info().Msg("WhatsApp sync loop starting...")
 
-	w.client.AddEventHandler(func(evt interface{}) {
-		w.handleEvent(evt)
+	w.handlerOnce.Do(func() {
+		w.client.AddEventHandler(func(evt interface{}) {
+			w.handleEvent(evt)
+		})
 	})
 
 	if w.client.Store.ID == nil {
@@ -101,6 +104,34 @@ func (w *WhatsAppAdapter) Start(ctx context.Context) error {
 	log.Info().Msg("WhatsApp sync loop stopping...")
 	w.client.Disconnect()
 	return nil
+}
+
+// waWatchKey normalizes room filter keys so "whatsapp:<jid>", full JID,
+// and legacy bare user parts all resolve to the same bucket.
+func waWatchKey(room string) string {
+	room = strings.TrimSpace(strings.TrimPrefix(room, "whatsapp:"))
+	return room
+}
+
+// parseWAJID accepts "whatsapp:<jid>", full JID, or legacy bare user part.
+func parseWAJID(s string) (types.JID, error) {
+	s = strings.TrimSpace(strings.TrimPrefix(s, "whatsapp:"))
+	if s == "" {
+		return types.EmptyJID, fmt.Errorf("empty whatsapp jid")
+	}
+	if !strings.Contains(s, "@") {
+		s = s + "@" + types.DefaultUserServer
+	}
+	return types.ParseJID(s)
+}
+
+func waBroadcastKeys(chat types.JID) []string {
+	full := chat.String()
+	keys := []string{waWatchKey(full)}
+	if bare := strings.TrimSpace(chat.User); bare != "" && bare != full && waWatchKey(bare) != keys[0] {
+		keys = append(keys, waWatchKey(bare))
+	}
+	return keys
 }
 
 func (w *WhatsAppAdapter) handleEvent(rawEvt interface{}) {
@@ -139,19 +170,23 @@ func (w *WhatsAppAdapter) handleEvent(rawEvt interface{}) {
 			return
 		}
 
-		senderID := evt.Info.Sender.User
-		roomID := evt.Info.Chat.User
-		if evt.Info.IsGroup {
-			roomID = evt.Info.Chat.User // The JID user part acts as group ID
+		// Preserve full JIDs (user@server) so DMs (s.whatsapp.net),
+		// groups (g.us), channels, and LIDs stay distinct.
+		chatJID := evt.Info.Chat
+		senderJID := evt.Info.Sender
+		if evt.Info.IsFromMe && senderJID.IsEmpty() {
+			senderJID = chatJID
 		}
+		roomID := fmt.Sprintf("whatsapp:%s", chatJID.String())
+		authorID := senderJID.String()
 
 		msg := schema.Message{
 			SchemaVersion: "1.0",
 			ID:            ulid.Make().String(),
 			Platform:      "whatsapp",
 			PlatformID:    evt.Info.ID,
-			Room:          schema.Room{ID: fmt.Sprintf("whatsapp:%s", roomID)},
-			Author:        schema.Author{ID: senderID},
+			Room:          schema.Room{ID: roomID},
+			Author:        schema.Author{ID: authorID, DisplayName: evt.Info.PushName},
 			Content:       schema.Content{Type: "text", Text: text, Attachments: attachments},
 			Timestamp:     evt.Info.Timestamp.UTC(),
 		}
@@ -160,10 +195,12 @@ func (w *WhatsAppAdapter) handleEvent(rawEvt interface{}) {
 
 		w.mu.RLock()
 		defer w.mu.RUnlock()
-		for _, ch := range w.watchers[roomID] {
-			select {
-			case ch <- msg:
-			default:
+		for _, key := range waBroadcastKeys(chatJID) {
+			for _, ch := range w.watchers[key] {
+				select {
+				case ch <- msg:
+				default:
+				}
 			}
 		}
 		for _, ch := range w.watchers[""] {
@@ -186,9 +223,10 @@ func (w *WhatsAppAdapter) ReadHistory(roomID string, limit int, since time.Time)
 
 func (w *WhatsAppAdapter) Watch(ctx context.Context, roomID string) (<-chan schema.Message, error) {
 	ch := make(chan schema.Message, 100)
+	key := waWatchKey(roomID)
 
 	w.mu.Lock()
-	w.watchers[roomID] = append(w.watchers[roomID], ch)
+	w.watchers[key] = append(w.watchers[key], ch)
 	w.mu.Unlock()
 
 	go func() {
@@ -197,12 +235,12 @@ func (w *WhatsAppAdapter) Watch(ctx context.Context, roomID string) (<-chan sche
 		defer w.mu.Unlock()
 
 		var updated []chan schema.Message
-		for _, watchCh := range w.watchers[roomID] {
+		for _, watchCh := range w.watchers[key] {
 			if watchCh != ch {
 				updated = append(updated, watchCh)
 			}
 		}
-		w.watchers[roomID] = updated
+		w.watchers[key] = updated
 		close(ch)
 	}()
 
@@ -214,11 +252,7 @@ func (w *WhatsAppAdapter) Send(roomID, text string) (schema.Message, error) {
 		return schema.Message{}, fmt.Errorf("whatsapp client is not connected")
 	}
 
-	roomStr := strings.TrimPrefix(roomID, "whatsapp:")
-	if !strings.Contains(roomStr, "@") {
-		roomStr = roomStr + "@" + types.DefaultUserServer
-	}
-	jid, err := types.ParseJID(roomStr)
+	jid, err := parseWAJID(roomID)
 	if err != nil {
 		return schema.Message{}, fmt.Errorf("invalid whatsapp jid format: %w", err)
 	}
@@ -255,13 +289,12 @@ func (w *WhatsAppAdapter) Reply(msgID, text string) (schema.Message, error) {
 		return schema.Message{}, err
 	}
 
-	roomStr := strings.TrimPrefix(msg.Room.ID, "whatsapp:")
-	chatJID, err := types.ParseJID(roomStr)
+	chatJID, err := parseWAJID(msg.Room.ID)
 	if err != nil {
 		return schema.Message{}, err
 	}
 
-	senderJID, err := types.ParseJID(msg.Author.ID)
+	senderJID, err := parseWAJID(msg.Author.ID)
 	if err != nil {
 		senderJID = chatJID
 	}
@@ -300,13 +333,12 @@ func (w *WhatsAppAdapter) React(msgID, emoji string) error {
 		return err
 	}
 
-	roomStr := strings.TrimPrefix(msg.Room.ID, "whatsapp:")
-	chatJID, err := types.ParseJID(roomStr)
+	chatJID, err := parseWAJID(msg.Room.ID)
 	if err != nil {
 		return err
 	}
 
-	senderJID, err := types.ParseJID(msg.Author.ID)
+	senderJID, err := parseWAJID(msg.Author.ID)
 	if err != nil {
 		senderJID = chatJID
 	}
@@ -317,11 +349,11 @@ func (w *WhatsAppAdapter) React(msgID, emoji string) error {
 }
 
 func (w *WhatsAppAdapter) Ban(roomID, userID, reason string) error {
-	chatJID, err := types.ParseJID(strings.TrimPrefix(roomID, "whatsapp:"))
+	chatJID, err := parseWAJID(roomID)
 	if err != nil {
 		return err
 	}
-	userJID, err := types.ParseJID(userID)
+	userJID, err := parseWAJID(userID)
 	if err != nil {
 		return err
 	}
@@ -341,7 +373,7 @@ func (w *WhatsAppAdapter) DeleteMessage(msgID string) error {
 		return err
 	}
 
-	chatJID, err := types.ParseJID(strings.TrimPrefix(msg.Room.ID, "whatsapp:"))
+	chatJID, err := parseWAJID(msg.Room.ID)
 	if err != nil {
 		return err
 	}
