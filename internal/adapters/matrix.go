@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fossism/chaind-cli/internal/store"
 	"github.com/fossism/chaind-cli/internal/schema"
+	"github.com/fossism/chaind-cli/internal/store"
 	"github.com/oklog/ulid/v2"
 	"github.com/rs/zerolog/log"
 	"maunium.net/go/mautrix"
@@ -17,8 +17,8 @@ import (
 )
 
 type MatrixAdapter struct {
-	client *mautrix.Client
-	store  *store.Store
+	client   *mautrix.Client
+	store    *store.Store
 	mu       sync.RWMutex
 	watchers map[string][]chan schema.Message
 }
@@ -52,11 +52,16 @@ func (m *MatrixAdapter) Platform() string {
 }
 
 func (m *MatrixAdapter) Start(ctx context.Context) error {
-	syncer := m.client.Syncer.(*mautrix.DefaultSyncer)
-	
+	syncer, ok := m.client.Syncer.(*mautrix.DefaultSyncer)
+	if !ok || syncer == nil {
+		return fmt.Errorf("matrix syncer unavailable")
+	}
+
 	// Load the stored sync token
 	if token, err := m.store.GetSyncState(ctx, "matrix", "next_batch"); err == nil && token != "" {
-		m.client.Store.SaveNextBatch(ctx, m.client.UserID, token)
+		if m.client.Store != nil {
+			m.client.Store.SaveNextBatch(ctx, m.client.UserID, token)
+		}
 	}
 
 	syncer.OnEventType(event.EventMessage, func(_ context.Context, evt *event.Event) {
@@ -117,7 +122,7 @@ func (m *MatrixAdapter) ReadHistory(roomID string, limit int, since time.Time) (
 
 func (m *MatrixAdapter) Watch(ctx context.Context, roomID string) (<-chan schema.Message, error) {
 	ch := make(chan schema.Message, 100)
-	
+
 	m.mu.Lock()
 	m.watchers[roomID] = append(m.watchers[roomID], ch)
 	m.mu.Unlock()
@@ -126,7 +131,7 @@ func (m *MatrixAdapter) Watch(ctx context.Context, roomID string) (<-chan schema
 		<-ctx.Done()
 		m.mu.Lock()
 		defer m.mu.Unlock()
-		
+
 		var updated []chan schema.Message
 		for _, w := range m.watchers[roomID] {
 			if w != ch {
@@ -142,11 +147,11 @@ func (m *MatrixAdapter) Watch(ctx context.Context, roomID string) (<-chan schema
 
 func (m *MatrixAdapter) Send(roomID, text string) (schema.Message, error) {
 	targetRoom := strings.TrimPrefix(roomID, "matrix:")
-	
+
 	// Handle sending to a user ID by creating/finding a DM
 	if strings.HasPrefix(targetRoom, "@") {
 		resp, err := m.client.CreateRoom(context.Background(), &mautrix.ReqCreateRoom{
-			Invite: []id.UserID{id.UserID(targetRoom)},
+			Invite:   []id.UserID{id.UserID(targetRoom)},
 			IsDirect: true,
 		})
 		if err != nil {
@@ -160,12 +165,12 @@ func (m *MatrixAdapter) Send(roomID, text string) (schema.Message, error) {
 		return schema.Message{}, err
 	}
 	return schema.Message{
-		ID: ulid.Make().String(),
-		Platform: "matrix",
+		ID:         ulid.Make().String(),
+		Platform:   "matrix",
 		PlatformID: string(resp.EventID),
-		Room: schema.Room{ID: "matrix:" + targetRoom},
-		Content: schema.Content{Type: "text", Text: text},
-		Timestamp: time.Now().UTC(),
+		Room:       schema.Room{ID: "matrix:" + targetRoom},
+		Content:    schema.Content{Type: "text", Text: text},
+		Timestamp:  time.Now().UTC(),
 	}, nil
 }
 
@@ -177,7 +182,7 @@ func (m *MatrixAdapter) Reply(msgID, text string) (schema.Message, error) {
 	if err != nil {
 		return schema.Message{}, fmt.Errorf("failed to find original message for reply: %w", err)
 	}
-	
+
 	roomIDStr := origMsg.Room.ID
 	if len(roomIDStr) > 7 && roomIDStr[:7] == "matrix:" {
 		roomIDStr = roomIDStr[7:]
@@ -256,7 +261,7 @@ func (m *MatrixAdapter) DeleteMessage(msgID string) error {
 	if len(roomIDStr) > 7 && roomIDStr[:7] == "matrix:" {
 		roomIDStr = roomIDStr[7:]
 	}
-	
+
 	_, err = m.client.RedactEvent(context.Background(), id.RoomID(roomIDStr), id.EventID(origMsg.PlatformID), mautrix.ReqRedact{Reason: "deleted via chaind"})
 	return err
 }
@@ -275,9 +280,9 @@ func (m *MatrixAdapter) handleMessage(evt *event.Event) {
 
 	msg := schema.Message{
 		SchemaVersion: "1.0",
-		ID:         ulid.Make().String(),
-		Platform:   "matrix",
-		PlatformID: string(evt.ID),
+		ID:            ulid.Make().String(),
+		Platform:      "matrix",
+		PlatformID:    string(evt.ID),
 		Room: schema.Room{
 			ID: fmt.Sprintf("matrix:%s", evt.RoomID),
 		},
@@ -288,7 +293,7 @@ func (m *MatrixAdapter) handleMessage(evt *event.Event) {
 			Type: "text",
 			Text: msgContent.Body,
 		},
-		Timestamp:  time.UnixMilli(evt.Timestamp).UTC(),
+		Timestamp: time.UnixMilli(evt.Timestamp).UTC(),
 	}
 
 	// Persist
@@ -303,7 +308,7 @@ func (m *MatrixAdapter) handleMessage(evt *event.Event) {
 		default:
 		}
 	}
-	
+
 	// Global listeners (empty string means watch all)
 	for _, ch := range m.watchers[""] {
 		select {

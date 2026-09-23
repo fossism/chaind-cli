@@ -19,8 +19,8 @@ import (
 	"github.com/celestix/gotgproto/dispatcher/handlers/filters"
 	"github.com/celestix/gotgproto/ext"
 	"github.com/celestix/gotgproto/sessionMaker"
-	"github.com/gotd/td/tg"
 	"github.com/glebarez/sqlite"
+	"github.com/gotd/td/tg"
 )
 
 type TelegramAdapter struct {
@@ -52,7 +52,7 @@ func (t *TelegramAdapter) Start(ctx context.Context) error {
 	log.Info().Msg("Telegram MTProto connecting...")
 
 	clientType := gotgproto.ClientTypeBot(t.token)
-	
+
 	home, _ := os.UserHomeDir()
 	sessionPath := filepath.Join(home, ".local", "share", "chaind", "telegram.session")
 
@@ -94,10 +94,13 @@ func (t *TelegramAdapter) handleMessage(msg tg.MessageClass) error {
 	switch m := msg.(type) {
 	case *tg.Message:
 		text := m.Message
-		log.Debug().Str("text", text).Str("sender", strconv.FormatInt(m.FromID.(*tg.PeerUser).UserID, 10)).Msg("Telegram message received")
-		if text == "" {
-			return nil
+		fromDebug := "unknown"
+		if m.FromID != nil {
+			if u, ok := m.FromID.(*tg.PeerUser); ok {
+				fromDebug = strconv.FormatInt(u.UserID, 10)
+			}
 		}
+		log.Debug().Str("text", text).Str("sender", fromDebug).Msg("Telegram message received")
 
 		senderID := "unknown"
 		if peer, ok := m.GetPeerID().(*tg.PeerUser); ok {
@@ -107,9 +110,9 @@ func (t *TelegramAdapter) handleMessage(msg tg.MessageClass) error {
 		} else if peer, ok := m.GetPeerID().(*tg.PeerChat); ok {
 			senderID = strconv.FormatInt(peer.ChatID, 10)
 		}
-		
+
 		roomID := senderID // In MTProto DMs, room is the sender's Peer ID
-		
+
 		var attachments []schema.Attachment
 		if m.Media != nil {
 			switch media := m.Media.(type) {
@@ -131,6 +134,9 @@ func (t *TelegramAdapter) handleMessage(msg tg.MessageClass) error {
 			}
 		}
 
+		if text == "" && m.Media == nil {
+			return nil
+		}
 		msgOut := schema.Message{
 			SchemaVersion: "1.0",
 			ID:            ulid.Make().String(),
@@ -191,7 +197,7 @@ func (t *TelegramAdapter) ReadHistory(roomID string, limit int, since time.Time)
 
 func (t *TelegramAdapter) Watch(ctx context.Context, roomID string) (<-chan schema.Message, error) {
 	ch := make(chan schema.Message, 100)
-	
+
 	t.mu.Lock()
 	t.watchers[roomID] = append(t.watchers[roomID], ch)
 	t.mu.Unlock()
@@ -200,7 +206,7 @@ func (t *TelegramAdapter) Watch(ctx context.Context, roomID string) (<-chan sche
 		<-ctx.Done()
 		t.mu.Lock()
 		defer t.mu.Unlock()
-		
+
 		var updated []chan schema.Message
 		for _, w := range t.watchers[roomID] {
 			if w != ch {
@@ -364,7 +370,7 @@ func (t *TelegramAdapter) Mute(roomID, userID string, d time.Duration) error {
 
 	ctxExt := t.client.CreateContext()
 	until := int(time.Now().Add(d).Unix())
-	
+
 	inputPeerGroup, err := ctxExt.ResolveInputPeerById(chatID)
 	if err != nil {
 		return err
@@ -373,7 +379,7 @@ func (t *TelegramAdapter) Mute(roomID, userID string, d time.Duration) error {
 	if !ok {
 		return fmt.Errorf("muting is currently only supported in channels/supergroups (need input peer channel)")
 	}
-	
+
 	inputPeerUser, err := ctxExt.ResolveInputPeerById(uID)
 	if err != nil {
 		return err
@@ -390,8 +396,8 @@ func (t *TelegramAdapter) Mute(roomID, userID string, d time.Duration) error {
 	}
 
 	_, err = ctxExt.Raw.ChannelsEditBanned(ctxExt, &tg.ChannelsEditBannedRequest{
-		Channel: &tg.InputChannel{ChannelID: inputChan.ChannelID, AccessHash: inputChan.AccessHash},
-		Participant: &tg.InputPeerUser{UserID: inputUser.UserID, AccessHash: inputUser.AccessHash},
+		Channel:      &tg.InputChannel{ChannelID: inputChan.ChannelID, AccessHash: inputChan.AccessHash},
+		Participant:  &tg.InputPeerUser{UserID: inputUser.UserID, AccessHash: inputUser.AccessHash},
 		BannedRights: bannedRights,
 	})
 	return err
